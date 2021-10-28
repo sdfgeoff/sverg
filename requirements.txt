@@ -1,0 +1,8 @@
+# Makes using the painter-core library easy
+maturin
+
+# GTK is used for the UI
+# At the moment I can't be bothered setting this up
+# properly, so I'll just use my systems built in gi/gtk
+vext
+vext.gi

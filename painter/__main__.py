@@ -15,9 +15,16 @@ import gi
 gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, Gdk
 
+import painter_core
+
+
+
+STROKE = []
+
 def stylus_down(event, x, y):
+    STROKE.append(True)
     print(event.get_axis(Gdk.AxisUse.PRESSURE), x, y)
-    
+    print(len(STROKE))
     
 
 
@@ -26,6 +33,8 @@ def on_activate(app):
     overlay = Gtk.Overlay()
 
     gl_area = Gtk.GLArea()
+    gl_area.set_hexpand(True)
+    gl_area.set_vexpand(True)
 
     gesture = Gtk.GestureStylus()
     gl_area.add_controller(gesture)
@@ -40,6 +49,19 @@ def on_activate(app):
     overlay.set_child(gl_area)
     overlay.add_overlay(toggle_ui_button)
     overlay.add_overlay(top_bar)
+    window.present()
+    
+
+    gl_area.make_current()
+    core = painter_core.PainterCore()
+
+    def render (area, ctx):
+        print("Rendering (python)")
+        ctx.make_current()
+        core.render()
+        return True
+    gl_area.connect ("render", render)
+
     window.present()
 
 
