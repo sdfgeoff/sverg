@@ -1,18 +1,24 @@
-use pyo3::prelude::*;
 use glow::HasContext;
 use libc::RTLD_NOW;
+use pyo3::prelude::*;
 use std::ffi;
-use std::rc::Rc;
 
-mod operations;
-mod image;
+
+
+use painter_data::image::Image;
+use painter_data::layer::{Layer, LayerId};
+use painter_data::operation::{Operation, OperationId};
+use painter_data::color_primitives::{Color, BlendMode};
+use painter_data::brush::{BrushId};
+use painter_data::stroke::StrokeData;
 
 #[pyclass]
 struct PainterCore {
     gl: glow::Context,
 
-    #[pyo3(get)]
-    image: image::Image,
+    image: Image,
+
+    operation_insert_point: Option<OperationId>,
 }
 
 #[pymethods]
@@ -21,20 +27,60 @@ impl PainterCore {
     pub fn new() -> PyResult<Self> {
         let gl = create_context();
 
-        let image = image::Image::new();
+        let image = Image::new();
 
-        Ok(Self { gl, image })
+        Ok(Self { gl, image, operation_insert_point: None})
     }
+
+    pub fn new_file(&mut self) {
+        self.image = Image::new();
+    }
+
+    pub fn add_layer(&mut self, name: String) -> LayerId {
+        self.image.layers.insert(Layer {
+            name,
+            blend_operation: None
+        })
+    }
+
+    // pub fn set_insert_point(&mut self, insert_point: OperationId) {
+
+    // }
+
+    pub fn create_stroke(&mut self, brush: BrushId, color: Color, blend_mode: BlendMode) -> OperationId {
+        let operation = Operation::Stroke(StrokeData {
+            color,
+            brush,
+            points: Vec::new(),
+            blend_mode,
+        });
+        let operation_id = self.image.operations.insert(operation);
+        // TODO: Insert into depgraph
+        operation_id
+    }
+
+    // pub fn add_point_to_stroke(&mut self, stroke: OperationId, point: StrokePointData) {
+
+    // }
+
 
     pub fn render(&mut self) -> PyResult<()> {
         println!("Rendering (rust)");
         unsafe {
             self.gl.clear_color(0.1, 0.1, 0.1, 1.0);
-            self.gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
+            self.gl
+                .clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
         }
         Ok(())
     }
+
 }
+
+
+impl PainterCore {
+
+}
+
 
 fn create_context() -> glow::Context {
     println!("Attempting to grab openGL Context");

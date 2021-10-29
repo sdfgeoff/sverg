@@ -19,50 +19,93 @@ import painter_core
 
 
 
-STROKE = []
 
-def stylus_down(event, x, y):
-    STROKE.append(True)
-    print(event.get_axis(Gdk.AxisUse.PRESSURE), x, y)
-    print(len(STROKE))
-    
-
-
-def on_activate(app):
-    window = Gtk.ApplicationWindow(application=app)
-    overlay = Gtk.Overlay()
-
+def create_canvas():
     gl_area = Gtk.GLArea()
     gl_area.set_hexpand(True)
     gl_area.set_vexpand(True)
+    return gl_area
 
-    gesture = Gtk.GestureStylus()
-    gl_area.add_controller(gesture)
-    gesture.connect("motion", stylus_down)
-    
-    toggle_ui_button = create_toggle_ui_button()
-    top_bar = create_top_bar()
-    
-    toggle_ui_button.connect("clicked", lambda _: top_bar.hide() if top_bar.get_visible() else top_bar.show())
-    
-    window.set_child(overlay)
-    overlay.set_child(gl_area)
-    overlay.add_overlay(toggle_ui_button)
-    overlay.add_overlay(top_bar)
-    window.present()
-    
 
-    gl_area.make_current()
-    core = painter_core.PainterCore()
 
-    def render (area, ctx):
+class BrushTool:
+    def __init__(self, core):
+        self.core = core
+        self.current_stroke = None
+        # self.color
+        # self.blend_mode
+        # self.brush
+
+    def stylus_down(self, event, x, y):
+        self.current_stroke = self.core.create_stroke()
+
+    def stylus_move(self, event, x, y):
+        #print(event.get_axis(Gdk.AxisUse.PRESSURE), x, y)
+        pass
+
+
+
+
+class Painter():
+    def __init__(self, app):
+        self.window = Gtk.ApplicationWindow(application=app)
+        self.overlay = Gtk.Overlay()
+
+        # Create the area on the screen to paint in
+        self.canvas = create_canvas()
+        self.window.set_child(self.overlay)
+        self.overlay.set_child(self.canvas)
+
+        # Create the actual engine that paints on the canvas.
+        # For it to grab a handle to openGL, the GLArea needs to be crrent and the window
+        # needs to be show.
+        self.canvas.make_current()
+        self.window.present()
+        self.core = painter_core.PainterCore()
+        self.core.add_layer("Background")
+
+        # Now that we have the core, we can bind things to it.
+        self.toggle_ui_button = create_toggle_ui_button()
+        self.top_bar = create_top_bar()
+        
+        self.toggle_ui_button.connect("clicked", lambda _: self.top_bar.hide() if self.top_bar.get_visible() else self.top_bar.show())
+        
+        self.overlay.add_overlay(self.toggle_ui_button)
+        self.overlay.add_overlay(self.top_bar)
+        
+        self.set_up_stylus()
+
+        self.canvas.connect("render", self.render)
+
+        self.brush_tool = BrushTool(self.core)
+        self.window.present()
+
+        
+    def set_up_stylus(self):
+        gesture = Gtk.GestureStylus()
+        self.canvas.add_controller(gesture)
+        gesture.connect("down", self.stylus_down)
+        gesture.connect("motion", self.stylus_move)
+
+    def stylus_down(self, event, x, y):
+        self.brush_tool.stylus_down(event, x, y)
+        
+
+
+    def stylus_move(self, event, x, y):
+        self.brush_tool.stylus_move(event, x, y)
+
+        #STROKE.append(True)
+        #print(event.get_axis(Gdk.AxisUse.PRESSURE), x, y)
+        #print(len(STROKE))
+
+        
+
+    def render(self, area, ctx):
         print("Rendering (python)")
         ctx.make_current()
-        core.render()
+        self.core.render()
         return True
-    gl_area.connect ("render", render)
-
-    window.present()
 
 
 def create_toggle_ui_button():
@@ -75,9 +118,7 @@ def create_toggle_ui_button():
 
 
 def create_top_bar():
-    
     top_box = Gtk.Box()
-    
     test_button1 = Gtk.Button.new_with_label('Test1')
     test_button2 = Gtk.Button.new_with_label('Test2')
     
@@ -94,9 +135,10 @@ def create_top_bar():
 
 
 
+
 def start():
     app = Gtk.Application(application_id='com.example.GtkApplication')
-    app.connect('activate', on_activate)
+    app.connect('activate', Painter)
     app.run(None)
 
 if __name__ == "__main__":

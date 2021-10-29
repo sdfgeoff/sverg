@@ -11,7 +11,7 @@ setup:
 
 build:
 	${VENV_START} \
-	cd painter-core; \
+	cd painter-core/painter-core; \
 	maturin develop
 	
 run:
