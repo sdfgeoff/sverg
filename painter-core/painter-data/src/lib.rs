@@ -6,3 +6,4 @@ pub mod layer;
 pub mod operation;
 pub mod stroke;
 pub mod template;
+pub mod depgraph;

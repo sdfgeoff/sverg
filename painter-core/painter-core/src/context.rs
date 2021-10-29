@@ -1,10 +1,12 @@
 use pyo3::prelude::*;
+use log::warn;
 
 use painter_data::image::Image;
 use painter_data::template::create_default_image;
 
 use painter_data::color_primitives::Color;
 use painter_data::id_map::{IdMapBase, LayerId, OperationId};
+use painter_data::operation::Operation;
 
 use painter_data::layer::Layer;
 
@@ -13,7 +15,7 @@ use painter_data::layer::Layer;
 pub struct EditContext {
     #[pyo3(get)]
     pub image: Image,
-    pub operation_insert_point: Option<OperationId>,
+    pub insert_operation_onto: Option<OperationId>,
 
     #[pyo3(get, set)]
     pub color: Color,
@@ -25,7 +27,7 @@ impl Default for EditContext {
 
         EditContext {
             image,
-            operation_insert_point: None,
+            insert_operation_onto: None,
             color: Color {
                 r: 0.0,
                 g: 0.0,
@@ -43,11 +45,25 @@ impl EditContext {
         Ok(Self::default())
     }
 
-    pub fn add_layer(&mut self, name: String) -> LayerId {
-        self.image.layers.insert(Layer {
-            name,
-            blend_operation_id: None,
-        })
-        // TODO Insert into depsgraph
+    pub fn insert_operation(&mut self, operation: Operation) -> OperationId {
+        let new_op_id = self.image.operations.insert(operation);
+        if let Some(op_onto) = self.insert_operation_onto {
+            self.image.depgraph.operate_on(new_op_id, op_onto);
+            self.insert_operation_onto = Some(op_onto);
+        } else {
+            warn!("Created orphan operation - no known location to place in depgraph")
+        }
+        return new_op_id;
+    }
+
+    pub fn select_layer(&mut self, layer_id: LayerId) {
+        let layer_blend_op_id = self.image.layers.get_unchecked(&layer_id).blend_operation_id;
+        let layer_existing_tips = self.image.depgraph.get_children_mut(layer_blend_op_id);
+        if layer_existing_tips.len() != 2 {
+            warn!("Malformed layer blend operation: incorrect number of dependencies");
+            self.insert_operation_onto = None;
+        } else {
+            self.insert_operation_onto = Some(layer_existing_tips[0]);
+        }
     }
 }

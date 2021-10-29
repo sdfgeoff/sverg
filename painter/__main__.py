@@ -46,6 +46,7 @@ class Painter():
         self.context = painter_core.EditContext()
         self.brush_tool = painter_core.BrushTool()
         self.brush_tool.set_brush_id(self.context.image.brushes.list_ids()[0]) # TODO: Is there a better way to do this binding between tools and context?
+        self.context.select_layer(self.context.image.layers.list_ids()[0]) # TODO: Is there a better way to select a layer?
         
         # Now that we have the core, we can bind things to it.
         self.toggle_ui_button = create_toggle_ui_button()

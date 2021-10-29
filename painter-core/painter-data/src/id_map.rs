@@ -14,22 +14,22 @@ use super::operation::Operation;
 
 /// Keys of the IdMap must implement this trait as it is
 /// used to find a new unique key.
-pub trait AddIncr {
+pub trait IncrId {
     fn increment(&mut self) -> Self;
 }
 
 /// Making 1000 strokes per second we will run out of ID's
 /// in about 585 million years. I think that's enough
 #[pyclass]
-#[derive(Eq, Hash, PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[derive(Eq, Hash, PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct BrushId(u64);
 
 #[pyclass]
-#[derive(Eq, Hash, PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[derive(Eq, Hash, PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct LayerId(u64);
 
 #[pyclass]
-#[derive(Eq, Hash, PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[derive(Eq, Hash, PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct OperationId(u64);
 
 #[pyclass]
@@ -69,27 +69,28 @@ impl Default for OperationId {
     }
 }
 
-impl AddIncr for BrushId {
+impl IncrId for BrushId {
     fn increment(&mut self) -> Self {
         let out = Self(self.0);
         self.0 += 1;
         out
     }
 }
-impl AddIncr for LayerId {
+impl IncrId for LayerId {
     fn increment(&mut self) -> Self {
         let out = Self(self.0);
         self.0 += 1;
         out
     }
 }
-impl AddIncr for OperationId {
+impl IncrId for OperationId {
     fn increment(&mut self) -> Self {
         let out = Self(self.0);
         self.0 += 1;
         out
     }
 }
+
 
 impl Default for BrushIdMap {
     fn default() -> Self {
@@ -122,6 +123,8 @@ pub trait IdMapBase {
 
     /// Inserts an item into the map and returns it's ID
     fn insert(&mut self, item: Self::Value) -> Self::Index;
+    fn get(&mut self, key: &Self::Index) -> Option<&Self::Value>;
+    fn get_unchecked(&mut self, key: &Self::Index) -> &Self::Value;
     fn get_mut(&mut self, key: &Self::Index) -> Option<&mut Self::Value>;
     fn get_mut_unchecked(&mut self, key: &Self::Index) -> &mut Self::Value;
 }
@@ -137,7 +140,12 @@ impl IdMapBase for BrushIdMap {
         );
         uniq
     }
-
+    fn get(&mut self, key: &BrushId) -> Option<&Brush>{
+        self.map.get(key)
+    }
+    fn get_unchecked(&mut self, key: &BrushId) -> &Brush{
+        self.map.get(key).expect("IDMap Get Unckecked Failed")
+    }
     fn get_mut(&mut self, key: &BrushId) -> Option<&mut Brush> {
         self.map.get_mut(key)
     }
@@ -159,7 +167,12 @@ impl IdMapBase for LayerIdMap {
         );
         uniq
     }
-
+    fn get(&mut self, key: &LayerId) -> Option<&Layer>{
+        self.map.get(key)
+    }
+    fn get_unchecked(&mut self, key: &LayerId) -> &Layer{
+        self.map.get(key).expect("IDMap Get Unckecked Failed")
+    }
     fn get_mut(&mut self, key: &LayerId) -> Option<&mut Layer> {
         self.map.get_mut(key)
     }
@@ -180,13 +193,19 @@ impl IdMapBase for OperationIdMap {
         );
         uniq
     }
+    fn get(&mut self, key: &OperationId) -> Option<&Operation>{
+        self.map.get(key)
+    }
+    fn get_unchecked(&mut self, key: &OperationId) -> &Operation{
+        self.map.get(key).expect("IDMap Get Unckecked Failed")
+    }
 
     fn get_mut(&mut self, key: &OperationId) -> Option<&mut Operation> {
         self.map.get_mut(key)
     }
 
     fn get_mut_unchecked(&mut self, key: &OperationId) -> &mut Operation {
-        self.map.get_mut(key).expect("IDMap Get Unckecked Failed")
+        self.map.get_mut(key).expect("IDMap Get Mut Unckecked Failed")
     }
 }
 

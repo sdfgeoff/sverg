@@ -51,10 +51,8 @@ impl BrushTool {
                     points: Vec::new(),
                     blend_mode: self.blend_mode.clone(),
                 });
-                let operation_id = context.image.operations.insert(operation);
-
+                let operation_id = context.insert_operation(operation);
                 self.current_operation_id = Some(operation_id);
-
                 self.continue_stroke(context, x, y, pressure);
             }
             None => {

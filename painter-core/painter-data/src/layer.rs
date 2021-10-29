@@ -7,5 +7,5 @@ use crate::id_map::OperationId;
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub struct Layer {
     pub name: String,
-    pub blend_operation_id: Option<OperationId>,
+    pub blend_operation_id: OperationId,
 }

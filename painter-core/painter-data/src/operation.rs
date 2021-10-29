@@ -8,4 +8,11 @@ use crate::stroke::StrokeData;
 pub enum Operation {
     Stroke(StrokeData),
     Composite(BlendMode),
+
+    // Number is just so it can be communicated to/from python, it's value is not used
+    Output(u32),
+
+    /// Operation does nothing to the canvas, but is useful to reference a location or to
+    /// ensure an operation is present.
+    Tag(String)
 }

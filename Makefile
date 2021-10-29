@@ -20,3 +20,6 @@ run:
 
 fmt:
 	cd painter-core; cargo fmt
+
+test:
+	cd painter-core; cargo test
