@@ -27,25 +27,6 @@ def create_canvas():
     return gl_area
 
 
-
-class BrushTool:
-    def __init__(self, core):
-        self.core = core
-        self.current_stroke = None
-        # self.color
-        # self.blend_mode
-        # self.brush
-
-    def stylus_down(self, event, x, y):
-        self.current_stroke = self.core.create_stroke()
-
-    def stylus_move(self, event, x, y):
-        #print(event.get_axis(Gdk.AxisUse.PRESSURE), x, y)
-        pass
-
-
-
-
 class Painter():
     def __init__(self, app):
         self.window = Gtk.ApplicationWindow(application=app)
@@ -62,7 +43,8 @@ class Painter():
         self.canvas.make_current()
         self.window.present()
         self.core = painter_core.PainterCore()
-        self.core.add_layer("Background")
+        self.context = painter_core.EditContext()
+        self.context.add_layer("Background")
 
         # Now that we have the core, we can bind things to it.
         self.toggle_ui_button = create_toggle_ui_button()
@@ -73,28 +55,33 @@ class Painter():
         self.overlay.add_overlay(self.toggle_ui_button)
         self.overlay.add_overlay(self.top_bar)
         
-        self.set_up_stylus()
+        self.setup_stylus()
 
         self.canvas.connect("render", self.render)
 
-        self.brush_tool = BrushTool(self.core)
+        self.brush_tool = painter_core.BrushTool()
+
         self.window.present()
 
         
-    def set_up_stylus(self):
+    def setup_stylus(self):
         gesture = Gtk.GestureStylus()
         self.canvas.add_controller(gesture)
         gesture.connect("down", self.stylus_down)
         gesture.connect("motion", self.stylus_move)
 
     def stylus_down(self, event, x, y):
-        self.brush_tool.stylus_down(event, x, y)
+        pressure = event.get_axis(Gdk.AxisUse.PRESSURE).value
+        self.brush_tool.start_stroke(self.context, x, y, pressure)
         
 
 
     def stylus_move(self, event, x, y):
-        self.brush_tool.stylus_move(event, x, y)
+        pressure = event.get_axis(Gdk.AxisUse.PRESSURE).value
+        self.brush_tool.continue_stroke(self.context, x, y, pressure)
 
+        #self.brush_tool.stylus_move(event, x, y)
+        # pass
         #STROKE.append(True)
         #print(event.get_axis(Gdk.AxisUse.PRESSURE), x, y)
         #print(len(STROKE))
@@ -104,7 +91,7 @@ class Painter():
     def render(self, area, ctx):
         print("Rendering (python)")
         ctx.make_current()
-        self.core.render()
+        self.core.render(self.context)
         return True
 
 

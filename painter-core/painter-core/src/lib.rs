@@ -3,22 +3,21 @@ use libc::RTLD_NOW;
 use pyo3::prelude::*;
 use std::ffi;
 
+mod context;
+use context::EditContext;
+
+mod brush_tool;
+use brush_tool::BrushTool;
 
 
-use painter_data::image::Image;
-use painter_data::layer::{Layer, LayerId};
-use painter_data::operation::{Operation, OperationId};
-use painter_data::color_primitives::{Color, BlendMode};
-use painter_data::brush::{BrushId};
-use painter_data::stroke::StrokeData;
+
+use simple_logger::SimpleLogger;
+
+
 
 #[pyclass]
 struct PainterCore {
     gl: glow::Context,
-
-    image: Image,
-
-    operation_insert_point: Option<OperationId>,
 }
 
 #[pymethods]
@@ -26,61 +25,56 @@ impl PainterCore {
     #[new]
     pub fn new() -> PyResult<Self> {
         let gl = create_context();
+        SimpleLogger::new().init().unwrap();
 
-        let image = Image::new();
-
-        Ok(Self { gl, image, operation_insert_point: None})
-    }
-
-    pub fn new_file(&mut self) {
-        self.image = Image::new();
-    }
-
-    pub fn add_layer(&mut self, name: String) -> LayerId {
-        self.image.layers.insert(Layer {
-            name,
-            blend_operation: None
+        Ok(Self {
+            gl,
+            //context: EditContext::default()
         })
     }
+
+    // pub fn new_file(&mut self) {
+    //     self.context.get_mut().unwrap().image = Image::new();
+    // }
 
     // pub fn set_insert_point(&mut self, insert_point: OperationId) {
 
     // }
 
-    pub fn create_stroke(&mut self, brush: BrushId, color: Color, blend_mode: BlendMode) -> OperationId {
-        let operation = Operation::Stroke(StrokeData {
-            color,
-            brush,
-            points: Vec::new(),
-            blend_mode,
-        });
-        let operation_id = self.image.operations.insert(operation);
-        // TODO: Insert into depgraph
-        operation_id
-    }
+    // pub fn create_stroke(
+    //     &mut self,
+    //     brush: BrushId,
+    //     color: Color,
+    //     blend_mode: BlendMode,
+    // ) -> OperationId {
+    //     let operation = Operation::Stroke(StrokeData {
+    //         color,
+    //         brush,
+    //         points: Vec::new(),
+    //         blend_mode,
+    //     });
+    //     let operation_id = self.image.operations.insert(operation);
+    //     // TODO: Insert into depgraph
+    //     operation_id
+    // }
 
     // pub fn add_point_to_stroke(&mut self, stroke: OperationId, point: StrokePointData) {
 
     // }
 
-
-    pub fn render(&mut self) -> PyResult<()> {
+    pub fn render(&mut self, context: EditContext) -> PyResult<()> {
         println!("Rendering (rust)");
+        let col = context.image.metadata.canvas_background_color;
         unsafe {
-            self.gl.clear_color(0.1, 0.1, 0.1, 1.0);
+            self.gl.clear_color(col.r, col.g, col.b, col.a);
             self.gl
                 .clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
         }
         Ok(())
     }
-
 }
 
-
-impl PainterCore {
-
-}
-
+impl PainterCore {}
 
 fn create_context() -> glow::Context {
     println!("Attempting to grab openGL Context");
@@ -118,5 +112,7 @@ fn create_context() -> glow::Context {
 #[pymodule]
 fn painter_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PainterCore>()?;
+    m.add_class::<BrushTool>()?;
+    m.add_class::<EditContext>()?;
     Ok(())
 }

@@ -1,8 +1,8 @@
-use serde::{Serialize, Deserialize};
 use pyo3::prelude::*;
+use serde::{Deserialize, Serialize};
 
-use crate::stroke::StrokeData;
 use crate::id_map::AddIncr;
+use crate::stroke::StrokeData;
 
 /// Making 1000 strokes per second we will run out of ID's
 /// in about 585 million years. I think that's enough
@@ -24,10 +24,8 @@ impl AddIncr for OperationId {
     }
 }
 
-
-
-
-#[derive(PartialEq, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub enum Operation {
     Stroke(StrokeData),
+    BlendLayers(),
 }

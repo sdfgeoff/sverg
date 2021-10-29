@@ -1,8 +1,8 @@
 use pyo3::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use crate::operation::OperationId;
 use crate::id_map::AddIncr;
+use crate::operation::OperationId;
 
 #[pyclass]
 #[derive(Eq, Hash, PartialEq, Debug, Clone, Serialize, Deserialize)]
@@ -22,10 +22,7 @@ impl AddIncr for LayerId {
     }
 }
 
-
-
-
-#[derive(PartialEq, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub struct Layer {
     pub name: String,
     pub blend_operation: Option<OperationId>,

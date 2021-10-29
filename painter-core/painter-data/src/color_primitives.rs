@@ -1,7 +1,5 @@
-
-use serde::{Serialize, Deserialize};
 use pyo3::prelude::*;
-
+use serde::{Deserialize, Serialize};
 
 #[pyclass]
 #[derive(PartialEq, Debug, Default, Serialize, Deserialize, Clone)]
@@ -12,9 +10,7 @@ pub struct Color {
     pub a: f32,
 }
 
-
-#[derive(FromPyObject)]
-#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
+#[derive(FromPyObject, PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub enum BlendMode {
     Mix(f32),
 }

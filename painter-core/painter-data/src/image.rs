@@ -1,21 +1,19 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
 
-use crate::id_map::{IdMap};
+use crate::brush::{Brush, BrushId};
 use crate::color_primitives::Color;
-use crate::operation::{OperationId, Operation};
-use crate::brush::{BrushId, Brush};
-use crate::layer::{LayerId, Layer};
+use crate::id_map::IdMap;
+use crate::layer::{Layer, LayerId};
+use crate::operation::{Operation, OperationId};
 
-
-
-#[derive(PartialEq, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub struct MetaData {
-    preview_canvas_size: [i32; 2],
-    canvas_background_color: Color,
+    pub preview_canvas_size: [i32; 2],
+    pub canvas_background_color: Color,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Image {
     pub file_format_version: (i32, i32, i32),
     pub brushes: IdMap<BrushId, Brush>,
@@ -26,10 +24,8 @@ pub struct Image {
     pub metadata: MetaData,
 }
 
-
-
-impl Image {
-    pub fn new() -> Self {
+impl Default for  Image {
+    fn default() -> Self {
         Self {
             file_format_version: (0, 0, 1),
             brushes: IdMap::new(BrushId::new()),
