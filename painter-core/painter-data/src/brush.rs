@@ -21,20 +21,22 @@ impl BrushId {
     }
 }
 
+#[pyclass]
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub struct PressureSettings {
-    min_value: f64,
-    max_value: f64,
-    random: f64,
+    pub min_value: f64,
+    pub max_value: f64,
+    pub random: f64,
 }
 
+#[pyclass]
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub struct Brush {
-    bitmap: BrushGlyph,
-    size: PressureSettings,
-    flow: PressureSettings,
-    scatter: PressureSettings,
-    gap: PressureSettings,
+    pub bitmap: BrushGlyph,
+    pub size: PressureSettings,
+    pub flow: PressureSettings,
+    pub scatter: PressureSettings,
+    pub gap: PressureSettings,
 }
 
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]

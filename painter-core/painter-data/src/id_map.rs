@@ -1,6 +1,8 @@
 //! A hashmap-like object that auto-creates unique keys.
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use pyo3::prelude::*;
+
 
 /// Keys of the IdMap must implement this trait as it is
 /// used to find a new unique key.

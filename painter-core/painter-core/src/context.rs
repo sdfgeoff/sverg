@@ -1,6 +1,7 @@
 use pyo3::prelude::*;
 
 use painter_data::image::Image;
+use painter_data::template::create_default_image;
 use painter_data::operation::OperationId;
 
 use painter_data::color_primitives::Color;
@@ -19,7 +20,7 @@ pub struct EditContext {
 
 impl Default for EditContext {
     fn default() -> Self {
-        let image = Image::default();
+        let image = create_default_image();
 
         EditContext {
             image,
@@ -45,7 +46,7 @@ impl EditContext {
     pub fn add_layer(&mut self, name: String) -> LayerId {
         self.image.layers.insert(Layer {
             name,
-            blend_operation: None,
+            blend_operation_id: None,
         })
         // TODO Insert into depsgraph
     }

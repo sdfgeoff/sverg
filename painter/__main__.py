@@ -44,8 +44,8 @@ class Painter():
         self.window.present()
         self.core = painter_core.PainterCore()
         self.context = painter_core.EditContext()
-        self.context.add_layer("Background")
-
+        self.brush_tool = painter_core.BrushTool()
+        
         # Now that we have the core, we can bind things to it.
         self.toggle_ui_button = create_toggle_ui_button()
         self.top_bar = create_top_bar()
@@ -59,7 +59,7 @@ class Painter():
 
         self.canvas.connect("render", self.render)
 
-        self.brush_tool = painter_core.BrushTool()
+        
 
         self.window.present()
 
@@ -73,12 +73,14 @@ class Painter():
     def stylus_down(self, event, x, y):
         pressure = event.get_axis(Gdk.AxisUse.PRESSURE).value
         self.brush_tool.start_stroke(self.context, x, y, pressure)
+        self.canvas.queue_draw()
         
 
 
     def stylus_move(self, event, x, y):
         pressure = event.get_axis(Gdk.AxisUse.PRESSURE).value
         self.brush_tool.continue_stroke(self.context, x, y, pressure)
+        self.canvas.queue_draw()
 
         #self.brush_tool.stylus_move(event, x, y)
         # pass

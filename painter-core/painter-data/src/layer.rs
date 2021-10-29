@@ -22,8 +22,9 @@ impl AddIncr for LayerId {
     }
 }
 
+#[pyclass]
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub struct Layer {
     pub name: String,
-    pub blend_operation: Option<OperationId>,
+    pub blend_operation_id: Option<OperationId>,
 }
