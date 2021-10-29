@@ -1,7 +1,6 @@
 use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
 
-
 #[pyclass]
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub struct PressureSettings {

@@ -9,11 +9,7 @@ use context::EditContext;
 mod brush_tool;
 use brush_tool::BrushTool;
 
-
-
 use simple_logger::SimpleLogger;
-
-
 
 #[pyclass]
 struct PainterCore {

@@ -4,7 +4,7 @@ use painter_data::image::Image;
 use painter_data::template::create_default_image;
 
 use painter_data::color_primitives::Color;
-use painter_data::id_map::{LayerId, OperationId, IdMapBase};
+use painter_data::id_map::{IdMapBase, LayerId, OperationId};
 
 use painter_data::layer::Layer;
 
@@ -15,10 +15,9 @@ pub struct EditContext {
     pub image: Image,
     pub operation_insert_point: Option<OperationId>,
 
-    #[pyo3(get,set)]
+    #[pyo3(get, set)]
     pub color: Color,
 }
-
 
 impl Default for EditContext {
     fn default() -> Self {
@@ -36,7 +35,6 @@ impl Default for EditContext {
         }
     }
 }
-
 
 #[pymethods]
 impl EditContext {

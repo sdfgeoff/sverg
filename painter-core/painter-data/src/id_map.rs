@@ -4,21 +4,19 @@
 //! aren't supported by pyo3's #[pyclass] macro, and for now it isn't worth
 //! the effort to write our own pyclass-ification system or procedural macros
 
+use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use pyo3::prelude::*;
 
-use super::operation::Operation;
-use super::layer::Layer;
 use super::brush::Brush;
+use super::layer::Layer;
+use super::operation::Operation;
 
 /// Keys of the IdMap must implement this trait as it is
 /// used to find a new unique key.
 pub trait AddIncr {
     fn increment(&mut self) -> Self;
 }
-
-
 
 /// Making 1000 strokes per second we will run out of ID's
 /// in about 585 million years. I think that's enough
@@ -33,9 +31,6 @@ pub struct LayerId(u64);
 #[pyclass]
 #[derive(Eq, Hash, PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct OperationId(u64);
-
-
-
 
 #[pyclass]
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
@@ -56,7 +51,6 @@ pub struct OperationIdMap {
     id: OperationId,
 }
 
-
 // Duplicate code starts below
 
 impl Default for BrushId {
@@ -74,7 +68,6 @@ impl Default for OperationId {
         OperationId(0)
     }
 }
-
 
 impl AddIncr for BrushId {
     fn increment(&mut self) -> Self {
@@ -97,7 +90,6 @@ impl AddIncr for OperationId {
         out
     }
 }
-
 
 impl Default for BrushIdMap {
     fn default() -> Self {
@@ -124,7 +116,6 @@ impl Default for OperationIdMap {
     }
 }
 
-
 pub trait IdMapBase {
     type Index;
     type Value;
@@ -134,7 +125,6 @@ pub trait IdMapBase {
     fn get_mut(&mut self, key: &Self::Index) -> Option<&mut Self::Value>;
     fn get_mut_unchecked(&mut self, key: &Self::Index) -> &mut Self::Value;
 }
-
 
 impl IdMapBase for BrushIdMap {
     type Index = BrushId;
@@ -160,7 +150,7 @@ impl IdMapBase for BrushIdMap {
 impl IdMapBase for LayerIdMap {
     type Index = LayerId;
     type Value = Layer;
-    
+
     fn insert(&mut self, item: Layer) -> LayerId {
         let uniq = self.id.increment();
         assert!(
@@ -178,7 +168,6 @@ impl IdMapBase for LayerIdMap {
         self.map.get_mut(key).expect("IDMap Get Unckecked Failed")
     }
 }
-
 
 impl IdMapBase for OperationIdMap {
     type Index = OperationId;
@@ -201,24 +190,23 @@ impl IdMapBase for OperationIdMap {
     }
 }
 
-
 #[pymethods]
 impl BrushIdMap {
-    fn list_ids(&self) -> Vec<BrushId>{
+    fn list_ids(&self) -> Vec<BrushId> {
         self.map.keys().cloned().collect()
     }
 }
 
 #[pymethods]
 impl LayerIdMap {
-    fn list_ids(&self) -> Vec<LayerId>{
+    fn list_ids(&self) -> Vec<LayerId> {
         self.map.keys().cloned().collect()
     }
 }
 
 #[pymethods]
 impl OperationIdMap {
-    fn list_ids(&self) -> Vec<OperationId>{
+    fn list_ids(&self) -> Vec<OperationId> {
         self.map.keys().cloned().collect()
     }
 }

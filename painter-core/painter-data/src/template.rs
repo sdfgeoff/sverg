@@ -1,11 +1,10 @@
+use crate::brush::{Brush, BrushGlyph, PressureSettings};
 use crate::color_primitives::Color;
-use crate::layer::Layer;
-use crate::brush::{Brush, PressureSettings, BrushGlyph};
+use crate::id_map::{BrushIdMap, IdMapBase, LayerIdMap, OperationIdMap};
 use crate::image::{Image, MetaData};
-use crate::id_map::{OperationIdMap, LayerIdMap, BrushIdMap, IdMapBase};
+use crate::layer::Layer;
 
 use std::collections::HashMap;
-
 
 pub fn create_default_image() -> Image {
     let mut image = Image {

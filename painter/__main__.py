@@ -45,7 +45,7 @@ class Painter():
         self.core = painter_core.PainterCore()
         self.context = painter_core.EditContext()
         self.brush_tool = painter_core.BrushTool()
-        self.brush_tool.set_brush_id(self.context.image.brushes.list_ids()[0])
+        self.brush_tool.set_brush_id(self.context.image.brushes.list_ids()[0]) # TODO: Is there a better way to do this binding between tools and context?
         
         # Now that we have the core, we can bind things to it.
         self.toggle_ui_button = create_toggle_ui_button()
@@ -70,29 +70,23 @@ class Painter():
         self.canvas.add_controller(gesture)
         gesture.connect("down", self.stylus_down)
         gesture.connect("motion", self.stylus_move)
+        gesture.connect("up", self.stylus_up)
 
     def stylus_down(self, event, x, y):
         pressure = event.get_axis(Gdk.AxisUse.PRESSURE).value
         self.brush_tool.start_stroke(self.context, x, y, pressure)
         self.canvas.queue_draw()
         
-
-
     def stylus_move(self, event, x, y):
         pressure = event.get_axis(Gdk.AxisUse.PRESSURE).value
         self.brush_tool.continue_stroke(self.context, x, y, pressure)
         self.canvas.queue_draw()
-
-        #self.brush_tool.stylus_move(event, x, y)
-        # pass
-        #STROKE.append(True)
-        #print(event.get_axis(Gdk.AxisUse.PRESSURE), x, y)
-        #print(len(STROKE))
-
-        
+    
+    def stylus_up(self, event, x, y):
+        self.brush_tool.end_stroke()
+        self.canvas.queue_draw()
 
     def render(self, area, ctx):
-        print("Rendering (python)")
         ctx.make_current()
         self.core.render(self.context)
         return True

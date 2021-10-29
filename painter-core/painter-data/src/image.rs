@@ -1,9 +1,9 @@
+use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use pyo3::prelude::*;
 
 use crate::color_primitives::Color;
-use crate::id_map::{OperationIdMap, BrushIdMap, LayerIdMap, OperationId};
+use crate::id_map::{BrushIdMap, LayerIdMap, OperationId, OperationIdMap};
 
 #[pyclass]
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
@@ -23,7 +23,7 @@ pub struct Image {
 
     #[pyo3(get)]
     pub brushes: BrushIdMap,
-    
+
     #[pyo3(get)]
     pub operations: OperationIdMap,
 

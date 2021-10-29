@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::id_map::OperationId;
 
-
 #[pyclass]
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub struct Layer {

@@ -1,14 +1,13 @@
-use pyo3::prelude::*;
 use log::warn;
+use pyo3::prelude::*;
 
 use painter_data::color_primitives::BlendMode;
 // use painter_data::color_primitives::Color;
-use painter_data::stroke::{StrokeData, StrokePoint};
+use painter_data::id_map::{BrushId, IdMapBase, OperationId};
 use painter_data::operation::Operation;
-use painter_data::id_map::{BrushId, OperationId, IdMapBase};
+use painter_data::stroke::{StrokeData, StrokePoint};
 
 use super::EditContext;
-
 
 #[pyclass]
 #[derive(Clone)]
@@ -17,7 +16,6 @@ pub struct BrushTool {
     current_operation_id: Option<OperationId>,
     brush_id: Option<BrushId>,
 }
-
 
 impl Default for BrushTool {
     fn default() -> Self {
@@ -52,10 +50,9 @@ impl BrushTool {
                     brush: brush_id.clone(),
                     points: Vec::new(),
                     blend_mode: self.blend_mode.clone(),
-        
                 });
                 let operation_id = context.image.operations.insert(operation);
-        
+
                 self.current_operation_id = Some(operation_id);
 
                 self.continue_stroke(context, x, y, pressure);
@@ -78,7 +75,6 @@ impl BrushTool {
             } else {
                 warn!(target: "brush_tool", "Current operation is not stroke");
             }
-            
         } else {
             warn!(target: "brush_tool", "No stroke to draw into");
         }
