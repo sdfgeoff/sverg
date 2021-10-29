@@ -45,6 +45,7 @@ class Painter():
         self.core = painter_core.PainterCore()
         self.context = painter_core.EditContext()
         self.brush_tool = painter_core.BrushTool()
+        self.brush_tool.set_brush_id(self.context.image.brushes.list_ids()[0])
         
         # Now that we have the core, we can bind things to it.
         self.toggle_ui_button = create_toggle_ui_button()

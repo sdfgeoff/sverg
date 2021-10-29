@@ -2,18 +2,20 @@ use pyo3::prelude::*;
 
 use painter_data::image::Image;
 use painter_data::template::create_default_image;
-use painter_data::operation::OperationId;
 
 use painter_data::color_primitives::Color;
+use painter_data::id_map::{LayerId, OperationId, IdMapBase};
 
-
-use painter_data::layer::{Layer, LayerId};
+use painter_data::layer::Layer;
 
 #[pyclass]
 #[derive(Clone)]
 pub struct EditContext {
+    #[pyo3(get)]
     pub image: Image,
     pub operation_insert_point: Option<OperationId>,
+
+    #[pyo3(get,set)]
     pub color: Color,
 }
 

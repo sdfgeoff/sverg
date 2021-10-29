@@ -1,9 +1,8 @@
 use crate::color_primitives::Color;
-use crate::layer::{Layer, LayerId};
-use crate::operation::OperationId;
-use crate::brush::{Brush, BrushId, PressureSettings, BrushGlyph};
+use crate::layer::Layer;
+use crate::brush::{Brush, PressureSettings, BrushGlyph};
 use crate::image::{Image, MetaData};
-use crate::id_map::IdMap;
+use crate::id_map::{OperationIdMap, LayerIdMap, BrushIdMap, IdMapBase};
 
 use std::collections::HashMap;
 
@@ -11,10 +10,10 @@ use std::collections::HashMap;
 pub fn create_default_image() -> Image {
     let mut image = Image {
         file_format_version: (0, 0, 1),
-        brushes: IdMap::new(BrushId::new()),
-        operations: IdMap::new(OperationId::new()),
+        brushes: BrushIdMap::default(),
+        operations: OperationIdMap::default(),
         depgraph: HashMap::new(),
-        layers: IdMap::new(LayerId::new()),
+        layers: LayerIdMap::default(),
         metadata: MetaData {
             preview_canvas_size: [1920, 1080],
             canvas_background_color: Color {

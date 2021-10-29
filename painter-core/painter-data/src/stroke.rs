@@ -1,4 +1,4 @@
-use crate::brush::BrushId;
+use crate::id_map::BrushId;
 use crate::color_primitives::{BlendMode, Color};
 use serde::{Deserialize, Serialize};
 

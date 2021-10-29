@@ -4,8 +4,8 @@ use log::warn;
 use painter_data::color_primitives::BlendMode;
 // use painter_data::color_primitives::Color;
 use painter_data::stroke::{StrokeData, StrokePoint};
-use painter_data::brush::{BrushId};
-use painter_data::operation::{OperationId, Operation};
+use painter_data::operation::Operation;
+use painter_data::id_map::{BrushId, OperationId, IdMapBase};
 
 use super::EditContext;
 
@@ -34,6 +34,10 @@ impl BrushTool {
     #[new]
     pub fn new() -> PyResult<Self> {
         Ok(Self::default())
+    }
+
+    pub fn set_brush_id(&mut self, brush_id: BrushId) {
+        self.brush_id = Some(brush_id);
     }
 
     fn start_stroke(&mut self, context: &mut EditContext, x: f32, y: f32, pressure: f32) {
