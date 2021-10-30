@@ -7,7 +7,7 @@ use painter_data::id_map::{BrushId, IdMapBase, OperationId};
 use painter_data::operation::Operation;
 use painter_data::stroke::{StrokeData, StrokePoint};
 
-use super::EditContext;
+use super::context::EditContext;
 
 #[pyclass]
 #[derive(Clone)]

@@ -192,6 +192,8 @@ dependencies = [
  "libc",
  "log",
  "painter_data",
+ "painter_render",
+ "painter_tools",
  "pyo3",
  "simple_logger",
 ]
@@ -203,6 +205,31 @@ dependencies = [
  "pyo3",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "painter_render"
+version = "0.1.0"
+dependencies = [
+ "glow",
+ "libc",
+ "log",
+ "painter_data",
+ "painter_tools",
+ "pyo3",
+ "simple_logger",
+]
+
+[[package]]
+name = "painter_tools"
+version = "0.1.0"
+dependencies = [
+ "glow",
+ "libc",
+ "log",
+ "painter_data",
+ "pyo3",
+ "simple_logger",
 ]
 
 [[package]]

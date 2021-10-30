@@ -1,12 +1,12 @@
 [package]
-name = "painter_core"
+name = "painter_tools"
 version = "0.1.0"
 edition = "2018"
 
 
 [lib]
-name = "painter_core"
-crate-type = ["cdylib"]
+name = "painter_tools"
+crate-type = ["cdylib", "lib"]
 
 [dependencies.pyo3]
 version = "0.14.5"
@@ -16,7 +16,5 @@ features = ["extension-module"]
 glow = "0.11.0"
 libc = "0.2.105"
 painter_data = { path = "../painter-data" }
-painter_render = { path = "../painter-render" }
-painter_tools = { path = "../painter-tools" }
 log = "0.4.14"
 simple_logger = "1.13.0"

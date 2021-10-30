@@ -3,4 +3,6 @@
 members = [
     "painter-data",
     "painter-core",
+    "painter-render",
+    "painter-tools",
 ]
