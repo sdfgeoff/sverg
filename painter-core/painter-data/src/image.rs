@@ -1,8 +1,8 @@
 use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::depgraph::DepGraph;
 use crate::color_primitives::Color;
+use crate::depgraph::DepGraph;
 use crate::id_map::{BrushIdMap, LayerIdMap, OperationIdMap};
 
 #[pyclass]

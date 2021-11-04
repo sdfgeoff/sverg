@@ -45,11 +45,10 @@ class Painter():
         self.core = painter_core.PainterCore()
         
         # Todo: should the core contain these by default rather than letting python create them?
-        self.renderer = painter_core.PainterRenderer()
+        #self.renderer = painter_core.PainterRenderer()
         self.context = painter_core.EditContext()
         self.brush_tool = painter_core.BrushTool()
-
-
+        self.renderer = None
         self.brush_tool.set_brush_id(self.context.image.brushes.list_ids()[0]) # TODO: Is there a better way to do this binding between tools and context?
         self.context.select_layer(self.context.image.layers.list_ids()[0]) # TODO: Is there a better way to select a layer?
         
@@ -65,9 +64,6 @@ class Painter():
         self.setup_stylus()
 
         self.canvas.connect("render", self.render)
-
-        
-
         self.window.present()
 
         
@@ -94,6 +90,8 @@ class Painter():
 
     def render(self, area, ctx):
         ctx.make_current()
+        if self.renderer is None:
+            self.renderer = painter_core.PainterRenderer()
         self.renderer.render(self.context)
         return True
 

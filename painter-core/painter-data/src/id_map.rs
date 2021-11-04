@@ -91,7 +91,6 @@ impl IncrId for OperationId {
     }
 }
 
-
 impl Default for BrushIdMap {
     fn default() -> Self {
         Self {
@@ -123,10 +122,13 @@ pub trait IdMapBase {
 
     /// Inserts an item into the map and returns it's ID
     fn insert(&mut self, item: Self::Value) -> Self::Index;
-    fn get(&mut self, key: &Self::Index) -> Option<&Self::Value>;
-    fn get_unchecked(&mut self, key: &Self::Index) -> &Self::Value;
+    fn alter(&mut self, id: Self::Index, item: Self::Value);
+    fn force(&mut self, id: Self::Index, item: Self::Value);
+    fn get(&self, key: &Self::Index) -> Option<&Self::Value>;
+    fn get_unchecked(&self, key: &Self::Index) -> &Self::Value;
     fn get_mut(&mut self, key: &Self::Index) -> Option<&mut Self::Value>;
     fn get_mut_unchecked(&mut self, key: &Self::Index) -> &mut Self::Value;
+    fn iter(&self) -> std::collections::hash_map::Iter<Self::Index, Self::Value>;
 }
 
 impl IdMapBase for BrushIdMap {
@@ -140,18 +142,27 @@ impl IdMapBase for BrushIdMap {
         );
         uniq
     }
-    fn get(&mut self, key: &BrushId) -> Option<&Brush>{
+    fn alter(&mut self, id: BrushId, item: Brush) {
+        assert!(self.map.contains_key(&id), "Attempting to alter non-existant ID");
+        self.map.insert(id, item);
+    }
+    fn force(&mut self, id: BrushId, item: Brush) {
+        self.map.insert(id, item);
+    }
+    fn get(&self, key: &BrushId) -> Option<&Brush> {
         self.map.get(key)
     }
-    fn get_unchecked(&mut self, key: &BrushId) -> &Brush{
+    fn get_unchecked(&self, key: &BrushId) -> &Brush {
         self.map.get(key).expect("IDMap Get Unckecked Failed")
     }
     fn get_mut(&mut self, key: &BrushId) -> Option<&mut Brush> {
         self.map.get_mut(key)
     }
-
     fn get_mut_unchecked(&mut self, key: &BrushId) -> &mut Brush {
         self.map.get_mut(key).expect("IDMap Get Unckecked Failed")
+    }
+    fn iter(&self) -> std::collections::hash_map::Iter<BrushId, Brush> {
+        self.map.iter()
     }
 }
 
@@ -167,10 +178,17 @@ impl IdMapBase for LayerIdMap {
         );
         uniq
     }
-    fn get(&mut self, key: &LayerId) -> Option<&Layer>{
+    fn alter(&mut self, id: LayerId, item: Layer) {
+        assert!(self.map.contains_key(&id), "Attempting to alter non-existant ID");
+        self.map.insert(id, item);
+    }
+    fn force(&mut self, id: LayerId, item: Layer) {
+        self.map.insert(id, item);
+    }
+    fn get(&self, key: &LayerId) -> Option<&Layer> {
         self.map.get(key)
     }
-    fn get_unchecked(&mut self, key: &LayerId) -> &Layer{
+    fn get_unchecked(&self, key: &LayerId) -> &Layer {
         self.map.get(key).expect("IDMap Get Unckecked Failed")
     }
     fn get_mut(&mut self, key: &LayerId) -> Option<&mut Layer> {
@@ -179,6 +197,9 @@ impl IdMapBase for LayerIdMap {
 
     fn get_mut_unchecked(&mut self, key: &LayerId) -> &mut Layer {
         self.map.get_mut(key).expect("IDMap Get Unckecked Failed")
+    }
+    fn iter(&self) -> std::collections::hash_map::Iter<LayerId, Layer> {
+        self.map.iter()
     }
 }
 
@@ -193,10 +214,17 @@ impl IdMapBase for OperationIdMap {
         );
         uniq
     }
-    fn get(&mut self, key: &OperationId) -> Option<&Operation>{
+    fn alter(&mut self, id: OperationId, item: Operation) {
+        assert!(self.map.contains_key(&id), "Attempting to alter non-existant ID");
+        self.map.insert(id, item);
+    }
+    fn force(&mut self, id: OperationId, item: Operation) {
+        self.map.insert(id, item);
+    }
+    fn get(&self, key: &OperationId) -> Option<&Operation> {
         self.map.get(key)
     }
-    fn get_unchecked(&mut self, key: &OperationId) -> &Operation{
+    fn get_unchecked(&self, key: &OperationId) -> &Operation {
         self.map.get(key).expect("IDMap Get Unckecked Failed")
     }
 
@@ -205,7 +233,12 @@ impl IdMapBase for OperationIdMap {
     }
 
     fn get_mut_unchecked(&mut self, key: &OperationId) -> &mut Operation {
-        self.map.get_mut(key).expect("IDMap Get Mut Unckecked Failed")
+        self.map
+            .get_mut(key)
+            .expect("IDMap Get Mut Unckecked Failed")
+    }
+    fn iter(&self) -> std::collections::hash_map::Iter<OperationId, Operation> {
+        self.map.iter()
     }
 }
 

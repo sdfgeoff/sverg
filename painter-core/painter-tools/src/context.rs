@@ -1,5 +1,5 @@
-use pyo3::prelude::*;
 use log::warn;
+use pyo3::prelude::*;
 
 use painter_data::image::Image;
 use painter_data::template::create_default_image;
@@ -7,8 +7,6 @@ use painter_data::template::create_default_image;
 use painter_data::color_primitives::Color;
 use painter_data::id_map::{IdMapBase, LayerId, OperationId};
 use painter_data::operation::Operation;
-
-use painter_data::layer::Layer;
 
 #[pyclass]
 #[derive(Clone)]
@@ -57,7 +55,11 @@ impl EditContext {
     }
 
     pub fn select_layer(&mut self, layer_id: LayerId) {
-        let layer_blend_op_id = self.image.layers.get_unchecked(&layer_id).blend_operation_id;
+        let layer_blend_op_id = self
+            .image
+            .layers
+            .get_unchecked(&layer_id)
+            .blend_operation_id;
         let layer_existing_tips = self.image.depgraph.get_children_mut(layer_blend_op_id);
         if layer_existing_tips.len() != 2 {
             warn!("Malformed layer blend operation: incorrect number of dependencies");

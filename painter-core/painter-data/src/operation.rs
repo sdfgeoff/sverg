@@ -14,5 +14,5 @@ pub enum Operation {
 
     /// Operation does nothing to the canvas, but is useful to reference a location or to
     /// ensure an operation is present.
-    Tag(String)
+    Tag(String),
 }
