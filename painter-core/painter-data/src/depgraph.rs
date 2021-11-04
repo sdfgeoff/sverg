@@ -104,8 +104,7 @@ impl DepGraph {
         }
     }
 
-
-    /// Returns all the children of a specific node. 
+    /// Returns all the children of a specific node.
     /// Works even if dependency cycles are present
     pub fn get_children_recursive_breadth_first(&self, start: OperationId) -> Vec<OperationId> {
         let mut to_search = vec![start];
@@ -125,7 +124,7 @@ impl DepGraph {
     }
 
     /// Returns a copy of the graph whereby the children become parents and visa-versa
-    /// ie: 
+    /// ie:
     ///    A ----> B ----> C
     /// becomes:
     ///    A <---- B <---- C
@@ -142,64 +141,61 @@ impl DepGraph {
 
 #[test]
 fn test_get_parents() {
-    use crate::id_map::{OperationId, IncrId};
+    use crate::id_map::{IncrId, OperationId};
     let mut d = DepGraph::default();
     let mut id_store = OperationId::default();
     let id1 = id_store.increment();
     let id2 = id_store.increment();
     let id3 = id_store.increment();
-    
+
     d.insert_as_child(id1, id2);
     d.insert_as_child(id2, id3);
-    
+
     assert!(d.get_parents(id2).contains(&id3));
     assert!(d.get_parents(id1).contains(&id2));
 }
 
-
 #[test]
 fn test_insert_as_child() {
     /// Inserts a node as a child of another node
-    use crate::id_map::{OperationId, IncrId};
+    use crate::id_map::{IncrId, OperationId};
 
     let mut d = DepGraph::default();
     let mut id_store = OperationId::default();
     let id1 = id_store.increment();
     let id2 = id_store.increment();
     let id3 = id_store.increment();
-    
+
     d.insert_as_child(id1, id2);
     d.insert_as_child(id2, id3);
-    
+
     assert!(d.get_children(id2).contains(&id1));
     assert!(d.get_children(id3).contains(&id2));
-    
 }
 
 #[test]
 fn test_flip() {
-    use crate::id_map::{OperationId, IncrId};
+    use crate::id_map::{IncrId, OperationId};
     let mut d = DepGraph::default();
     let mut id_store = OperationId::default();
     let a = id_store.increment();
     let b = id_store.increment();
     let c = id_store.increment();
-    
+
     d.insert_as_child(b, a);
     d.insert_as_child(c, b);
-    
+
     assert!(d.get_children(a).contains(&b));
     assert!(d.get_children(b).contains(&c));
-    
+
     let flipped = d.flip();
     assert!(flipped.get_children(b).contains(&a));
     assert!(flipped.get_children(c).contains(&b));
 }
 
-
 #[test]
 fn test_get_children_recursive_breadth_first() {
-    use crate::id_map::{OperationId, IncrId};
+    use crate::id_map::{IncrId, OperationId};
 
     {
         let mut graph = DepGraph::default();
@@ -208,14 +204,14 @@ fn test_get_children_recursive_breadth_first() {
         let b = id_store.increment();
         let c = id_store.increment();
         let d = id_store.increment();
-        
+
         // D <---- C <------ B <----- A
         graph.insert_as_child(b, a);
         graph.insert_as_child(c, b);
         graph.insert_as_child(d, c);
-        
+
         let all_children = graph.get_children_recursive_breadth_first(a);
-        
+
         assert_eq!(all_children, vec![b, c, d])
     }
 
@@ -228,7 +224,7 @@ fn test_get_children_recursive_breadth_first() {
         let d = id_store.increment();
         let x = id_store.increment();
         let y = id_store.increment();
-        
+
         // D <---- C <------ B <----- A
         //         X <------/
         //         Y <-----'
@@ -237,31 +233,31 @@ fn test_get_children_recursive_breadth_first() {
         graph.insert_as_child(d, c);
         graph.insert_as_child(x, b);
         graph.insert_as_child(y, b);
-        
+
         let all_children = graph.get_children_recursive_breadth_first(a);
-        
+
         assert_eq!(all_children, vec![b, c, x, y, d])
     }
 }
 
 #[test]
 fn test_get_children_recursive_breadth_first_with_dependency_cycle() {
-    use crate::id_map::{OperationId, IncrId};
-    
+    use crate::id_map::{IncrId, OperationId};
+
     let mut graph = DepGraph::default();
     let mut id_store = OperationId::default();
     let a = id_store.increment();
     let b = id_store.increment();
     let c = id_store.increment();
     let d = id_store.increment();
-    
+
     graph.insert_as_child(b, a);
     graph.insert_as_child(c, b);
     graph.insert_as_child(d, c);
     graph.insert_as_child(b, c);
-    
+
     let all_children = graph.get_children_recursive_breadth_first(a);
-    
+
     assert!(all_children.contains(&b));
     assert!(all_children.contains(&c));
     assert!(all_children.contains(&d));
@@ -270,7 +266,7 @@ fn test_get_children_recursive_breadth_first_with_dependency_cycle() {
 
 #[test]
 fn test_operate_on_simple() {
-    use crate::id_map::{OperationId, IncrId};
+    use crate::id_map::{IncrId, OperationId};
     let mut d = DepGraph::default();
 
     let mut id_store = OperationId::default();
@@ -287,12 +283,11 @@ fn test_operate_on_simple() {
     assert!(d.get_children(base).contains(&base_child));
     assert!(d.get_children(new).contains(&base));
     assert!(d.get_children(base_parent).contains(&new));
-
 }
 
 #[test]
 fn test_operate_on_with_multi_deps() {
-    use crate::id_map::{OperationId, IncrId};
+    use crate::id_map::{IncrId, OperationId};
 
     let mut d = DepGraph::default();
     let mut id_store = OperationId::default();
@@ -303,20 +298,20 @@ fn test_operate_on_with_multi_deps() {
     let base_parent1 = id_store.increment();
     let base_parent2 = id_store.increment();
     let new = id_store.increment();
-    
+
     d.insert_as_child(base_child1, base);
     d.insert_as_child(base_child2, base);
     d.insert_as_child(base, base_parent1);
     d.insert_as_child(base, base_parent2);
-    
+
     d.operate_on(new, base);
-    
+
     assert!(d.get_children(base).contains(&base_child1));
     assert!(d.get_children(base).contains(&base_child2));
     assert!(d.get_children(new).contains(&base));
     assert!(d.get_children(base_parent1).contains(&new));
     assert!(d.get_children(base_parent2).contains(&new));
-    
+
     // Parents no longer reference the original base
     assert!(!d.get_children(base_parent1).contains(&base));
     assert!(!d.get_children(base_parent2).contains(&base));

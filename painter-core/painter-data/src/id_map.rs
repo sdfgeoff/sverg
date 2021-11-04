@@ -143,7 +143,10 @@ impl IdMapBase for BrushIdMap {
         uniq
     }
     fn alter(&mut self, id: BrushId, item: Brush) {
-        assert!(self.map.contains_key(&id), "Attempting to alter non-existant ID");
+        assert!(
+            self.map.contains_key(&id),
+            "Attempting to alter non-existant ID"
+        );
         self.map.insert(id, item);
     }
     fn force(&mut self, id: BrushId, item: Brush) {
@@ -179,7 +182,10 @@ impl IdMapBase for LayerIdMap {
         uniq
     }
     fn alter(&mut self, id: LayerId, item: Layer) {
-        assert!(self.map.contains_key(&id), "Attempting to alter non-existant ID");
+        assert!(
+            self.map.contains_key(&id),
+            "Attempting to alter non-existant ID"
+        );
         self.map.insert(id, item);
     }
     fn force(&mut self, id: LayerId, item: Layer) {
@@ -215,7 +221,10 @@ impl IdMapBase for OperationIdMap {
         uniq
     }
     fn alter(&mut self, id: OperationId, item: Operation) {
-        assert!(self.map.contains_key(&id), "Attempting to alter non-existant ID");
+        assert!(
+            self.map.contains_key(&id),
+            "Attempting to alter non-existant ID"
+        );
         self.map.insert(id, item);
     }
     fn force(&mut self, id: OperationId, item: Operation) {

@@ -7,21 +7,16 @@ use std::ffi;
 use painter_data::id_map::IdMapBase;
 use painter_tools::context::EditContext;
 
+use std::collections::HashMap;
 
-use std::collections::{HashMap};
-
+use painter_data::depgraph::DepGraph;
 use painter_data::id_map::{OperationId, OperationIdMap};
 use painter_data::operation::Operation;
-use painter_data::depgraph::DepGraph;
 use painter_data::stroke::StrokeData;
 
 mod canvas;
-mod shader;
 mod quad;
-
-
-
-
+mod shader;
 
 #[pyclass]
 pub struct PainterRenderer {
@@ -71,10 +66,7 @@ impl PainterRenderer {
         let gl = create_gl_context();
 
         let brush_operator = BrushOperator::new(&gl);
-        Ok(Self {
-            gl,
-            brush_operator,
-        })
+        Ok(Self { gl, brush_operator })
     }
 
     fn render(&mut self, context: &EditContext) {
@@ -101,16 +93,15 @@ impl PainterRenderer {
                 Operation::Stroke(stroke_data) => {
                     self.brush_operator.perform_stroke(&self.gl, stroke_data);
                 }
-                Operation::Output(_id) => {},
-                Operation::Tag(_name) => {},
-                Operation::Composite(_name) => {},
+                Operation::Output(_id) => {}
+                Operation::Tag(_name) => {}
+                Operation::Composite(_name) => {}
             }
         }
     }
 }
 
 use painter_data::id_map::BrushId;
-
 
 struct BrushOperator {
     brush_shader: shader::SimpleShader,
@@ -122,27 +113,26 @@ impl BrushOperator {
         Self {
             mesh: quad::Quad::new(gl).expect("Creating Brush Mesh Failed"),
             brush_shader: shader::SimpleShader::new(
-                gl, 
-                include_str!("resources/brush.vert"), 
-                include_str!("resources/brush.frag")
-            ).expect("Loading Brush Shader Failed"),
+                gl,
+                include_str!("resources/brush.vert"),
+                include_str!("resources/brush.frag"),
+            )
+            .expect("Loading Brush Shader Failed"),
         }
-
     }
 
     fn perform_stroke(&mut self, gl: &glow::Context, stroke: &StrokeData) {
         println!("Drawing Stroke");
-        
+
         self.brush_shader.bind(gl);
-        self.mesh.bind(gl, self.brush_shader.attrib_vertex_positions);
-        
+        self.mesh
+            .bind(gl, self.brush_shader.attrib_vertex_positions);
+
         unsafe {
             gl.draw_arrays(glow::TRIANGLE_STRIP, 0, 4);
         }
-
     }
 }
-
 
 fn create_gl_context() -> glow::Context {
     info!("Attempting to grab openGL Context");
@@ -173,4 +163,3 @@ fn create_gl_context() -> glow::Context {
     info!("OpenGL Context Obtained!");
     gl
 }
-
