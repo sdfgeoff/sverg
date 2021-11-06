@@ -19,7 +19,6 @@ impl FrameBufferState {
         unsafe {
             gl.get_parameter_i32_slice(glow::VIEWPORT, &mut resolution);
         }
-        println!("res: {:?}", resolution);
     
         FrameBufferState {
             framebuffer,

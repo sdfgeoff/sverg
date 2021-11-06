@@ -31,7 +31,7 @@ impl SimpleShader {
         })
     }
 
-    pub fn bind(&mut self, gl: &Context) {
+    pub fn bind(&self, gl: &Context) {
         unsafe {
             gl.use_program(Some(self.program));
         }

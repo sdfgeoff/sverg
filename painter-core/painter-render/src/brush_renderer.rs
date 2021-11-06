@@ -3,6 +3,8 @@ use super::shader;
 use glow::HasContext;
 use painter_data::stroke::StrokeData;
 
+use super::canvas::Canvas;
+
 pub struct BrushRenderer {
     brush_shader: shader::SimpleShader,
     mesh: quad::Quad,
@@ -21,8 +23,8 @@ impl BrushRenderer {
         }
     }
 
-    pub fn perform_stroke(&mut self, gl: &glow::Context, stroke: &StrokeData) {
-        println!("Drawing Stroke");
+    pub fn perform_stroke(&mut self, gl: &glow::Context, stroke: &StrokeData, canvas: &Canvas) {
+        canvas.make_active(gl);
 
         self.brush_shader.bind(gl);
         self.mesh

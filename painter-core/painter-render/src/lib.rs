@@ -16,13 +16,16 @@ mod canvas;
 mod quad;
 mod shader;
 mod framebuffer_state;
+mod output_renderer;
 
 use brush_renderer::BrushRenderer;
+use output_renderer::OutputRenderer;
 
 #[pyclass]
 pub struct PainterRenderer {
     gl: glow::Context,
     brush_renderer: BrushRenderer,
+    output_renderer: OutputRenderer,
 
     tmp_canvas: Option<canvas::Canvas>,
 }
@@ -68,11 +71,13 @@ impl PainterRenderer {
         let gl = create_gl_context();
 
         let brush_renderer = BrushRenderer::new(&gl);
-        
+        let output_renderer = OutputRenderer::new(&gl);
+
         Ok(Self {
             gl,
             brush_renderer,
             tmp_canvas: None,
+            output_renderer, 
         })
     }
 
@@ -88,11 +93,11 @@ impl PainterRenderer {
         }
 
 
-        self.tmp_canvas.as_ref().unwrap().make_active(&self.gl);
 
         let output_node = get_output_node(&context.image.operations).expect("No Output Node");
         let mut order_of_operations = graph.get_children_recursive_breadth_first(output_node);
         order_of_operations.reverse();
+        order_of_operations.push(output_node);
 
         // From here we coud in theory remove any operations that haven't changed since last time and are in cache.
         // but for now that isn't implemented.
@@ -102,21 +107,15 @@ impl PainterRenderer {
 
             match context.image.operations.get_unchecked(operation_id) {
                 Operation::Stroke(stroke_data) => {
-                    self.brush_renderer.perform_stroke(&self.gl, stroke_data);
+                    self.brush_renderer.perform_stroke(&self.gl, stroke_data, &self.tmp_canvas.as_ref().unwrap());
                 }
-                Operation::Output(_id) => {}
+                Operation::Output(_id) => {
+                    let tmp_canvas = self.tmp_canvas.as_ref().unwrap();
+                    self.output_renderer.render(&self.gl, context, &tmp_canvas.texture, &outp_framebuffer_state);
+                }
                 Operation::Tag(_name) => {}
                 Operation::Composite(_name) => {}
             }
-        }
-
-        // Finally we can write to the gtk window:
-        unsafe {
-            outp_framebuffer_state.apply(&self.gl);
-            self.gl.clear_color(0.1, 0.1, 0.1, 1.0);
-            self.gl.disable(glow::DEPTH);
-            self.gl
-                .clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
         }
     }
 }

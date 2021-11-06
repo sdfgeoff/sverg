@@ -3,7 +3,8 @@ use std::convert::TryInto;
 
 pub struct Canvas {
     framebuffer: glow::Framebuffer,
-    texture: glow::Texture,
+    resolution: [u32; 2],
+    pub texture: glow::Texture,
 }
 
 #[derive(Debug)]
@@ -12,39 +13,6 @@ pub enum CanvasError {
     CreateTextureFailed(String),
 }
 
-/// Create the texture and set it up
-/// Does not allocate storage for the texture.
-pub fn create_canvas_texture(gl: &glow::Context) -> Result<glow::Texture, CanvasError> {
-    unsafe {
-        assert_eq!(gl.get_error(), glow::NO_ERROR);
-    }
-
-    let new_tex = unsafe {
-        gl.create_texture()
-            .map_err(CanvasError::CreateTextureFailed)?
-    };
-
-    unsafe {
-        gl.bind_texture(glow::TEXTURE_2D, Some(new_tex));
-
-        gl.tex_parameter_i32(
-            glow::TEXTURE_2D,
-            glow::TEXTURE_MAG_FILTER,
-            glow::LINEAR as i32,
-        );
-        gl.tex_parameter_i32(
-            glow::TEXTURE_2D,
-            glow::TEXTURE_MIN_FILTER,
-            glow::LINEAR_MIPMAP_LINEAR as i32,
-        );
-        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_S, glow::REPEAT as i32);
-        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_T, glow::REPEAT as i32);
-
-        assert_eq!(gl.get_error(), glow::NO_ERROR);
-    }
-
-    Ok(new_tex)
-}
 
 impl Canvas {
     pub fn new(gl: &glow::Context, resolution: [u32; 2]) -> Result<Self, CanvasError> {
@@ -95,12 +63,14 @@ impl Canvas {
         Ok(Self {
             framebuffer,
             texture,
+            resolution,
         })
     }
 
     pub fn make_active(&self, gl: &glow::Context) {
         unsafe {
             gl.bind_framebuffer(glow::FRAMEBUFFER, Some(self.framebuffer));
+            gl.viewport(0, 0, self.resolution[0] as i32, self.resolution[1] as i32);
         }
     }
 }
@@ -114,6 +84,43 @@ fn texture_unit_id_to_gl(int: u32) -> u32 {
     assert!(int <= 32);
     glow::TEXTURE0 + int
 }
+
+
+
+/// Create the texture and set it up
+/// Does not allocate storage for the texture.
+pub fn create_canvas_texture(gl: &glow::Context) -> Result<glow::Texture, CanvasError> {
+    unsafe {
+        assert_eq!(gl.get_error(), glow::NO_ERROR);
+    }
+
+    let new_tex = unsafe {
+        gl.create_texture()
+            .map_err(CanvasError::CreateTextureFailed)?
+    };
+
+    unsafe {
+        gl.bind_texture(glow::TEXTURE_2D, Some(new_tex));
+
+        gl.tex_parameter_i32(
+            glow::TEXTURE_2D,
+            glow::TEXTURE_MAG_FILTER,
+            glow::LINEAR as i32,
+        );
+        gl.tex_parameter_i32(
+            glow::TEXTURE_2D,
+            glow::TEXTURE_MIN_FILTER,
+            glow::LINEAR_MIPMAP_LINEAR as i32,
+        );
+        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_S, glow::REPEAT as i32);
+        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_T, glow::REPEAT as i32);
+
+        assert_eq!(gl.get_error(), glow::NO_ERROR);
+    }
+
+    Ok(new_tex)
+}
+
 
 /// The precision and number of channels used for a buffer
 /// Not all of these formats work as render targets. In my tests
