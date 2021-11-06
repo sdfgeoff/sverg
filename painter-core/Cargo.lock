@@ -62,6 +62,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "glam"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2c626156a479bfb5a4362c43f5abadd700af33ebc8db068089d9cb92493d6ab"
+
+[[package]]
 name = "glow"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -224,6 +230,7 @@ dependencies = [
 name = "painter_tools"
 version = "0.1.0"
 dependencies = [
+ "glam",
  "glow",
  "libc",
  "log",

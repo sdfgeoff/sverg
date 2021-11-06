@@ -7,6 +7,7 @@ use painter_data::template::create_default_image;
 use painter_data::color_primitives::Color;
 use painter_data::id_map::{IdMapBase, LayerId, OperationId};
 use painter_data::operation::Operation;
+use glam::Mat3;
 
 #[pyclass]
 #[derive(Clone)]
@@ -17,6 +18,9 @@ pub struct EditContext {
 
     #[pyo3(get, set)]
     pub color: Color,
+
+    #[pyo3(get, set)]
+    pub canvas_transform: CanvasTransform,
 }
 
 impl Default for EditContext {
@@ -32,6 +36,7 @@ impl Default for EditContext {
                 b: 0.0,
                 a: 1.0,
             },
+            canvas_transform: CanvasTransform::default(),
         }
     }
 }
@@ -66,6 +71,50 @@ impl EditContext {
             self.insert_operation_onto = None;
         } else {
             self.insert_operation_onto = Some(layer_existing_tips[0]);
+        }
+    }
+}
+
+
+#[pyclass]
+#[derive(Clone)]
+pub struct CanvasTransform {
+    #[pyo3(get, set)]
+    scale: f32,
+    #[pyo3(get, set)]
+    angle: f32,
+    #[pyo3(get, set)]
+    translation: [f32; 2],
+}
+
+#[pymethods]
+impl CanvasTransform {
+    #[new]
+    fn new(scale: f32, angle: f32, translation: [f32; 2]) -> Self {
+        Self {
+            scale,
+            angle,
+            translation
+        }
+    }
+}
+
+impl CanvasTransform {
+    pub fn to_mat(&self) -> Mat3 {
+        Mat3::from_scale_angle_translation(
+            [self.scale, self.scale].into(),
+            self.angle,
+            self.translation.into()
+        )
+    }
+}
+
+impl Default for CanvasTransform {
+    fn default() -> Self {
+        Self {
+            scale: 1.0,
+            angle: 0.0,
+            translation: [0.0, 0.0],
         }
     }
 }

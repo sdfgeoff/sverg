@@ -9,6 +9,7 @@ pub enum QuadError {
     BufferCreationFailed(String),
 }
 
+/// A four-vertex mesh reaching from 0.0 to 1.0 on each axis
 pub struct Quad {
     position_buffer: Buffer,
 }

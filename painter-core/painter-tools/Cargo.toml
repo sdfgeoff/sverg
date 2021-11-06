@@ -18,3 +18,4 @@ libc = "0.2.105"
 painter_data = { path = "../painter-data" }
 log = "0.4.14"
 simple_logger = "1.13.0"
+glam = "0.20.0"

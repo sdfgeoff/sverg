@@ -17,6 +17,7 @@ mod quad;
 mod shader;
 mod framebuffer_state;
 mod output_renderer;
+mod gl_utils;
 
 use brush_renderer::BrushRenderer;
 use output_renderer::OutputRenderer;
