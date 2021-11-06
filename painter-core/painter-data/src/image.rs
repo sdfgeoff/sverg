@@ -9,7 +9,7 @@ use crate::id_map::{BrushIdMap, LayerIdMap, OperationIdMap};
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub struct MetaData {
     #[pyo3(get, set)]
-    pub preview_canvas_size: [i32; 2],
+    pub preview_canvas_size: [u32; 2],
 
     #[pyo3(get, set)]
     pub canvas_background_color: Color,

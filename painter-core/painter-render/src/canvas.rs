@@ -1,11 +1,12 @@
 use glow::HasContext;
 use std::convert::TryInto;
 
-struct Canvas {
+pub struct Canvas {
     framebuffer: glow::Framebuffer,
     texture: glow::Texture,
 }
 
+#[derive(Debug)]
 pub enum CanvasError {
     CreateFrameBufferFailed(String),
     CreateTextureFailed(String),
@@ -95,6 +96,12 @@ impl Canvas {
             framebuffer,
             texture,
         })
+    }
+
+    pub fn make_active(&self, gl: &glow::Context) {
+        unsafe {
+            gl.bind_framebuffer(glow::FRAMEBUFFER, Some(self.framebuffer));
+        }
     }
 }
 

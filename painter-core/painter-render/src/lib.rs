@@ -2,27 +2,29 @@ use glow::HasContext;
 use libc::RTLD_NOW;
 use log::info;
 use pyo3::prelude::*;
+use std::collections::HashMap;
 use std::ffi;
 
 use painter_data::id_map::IdMapBase;
 use painter_tools::context::EditContext;
 
-use std::collections::HashMap;
-
-use painter_data::depgraph::DepGraph;
 use painter_data::id_map::{OperationId, OperationIdMap};
 use painter_data::operation::Operation;
-use painter_data::stroke::StrokeData;
 
+mod brush_renderer;
 mod canvas;
 mod quad;
 mod shader;
+mod framebuffer_state;
+
+use brush_renderer::BrushRenderer;
 
 #[pyclass]
 pub struct PainterRenderer {
     gl: glow::Context,
+    brush_renderer: BrushRenderer,
 
-    brush_operator: BrushOperator,
+    tmp_canvas: Option<canvas::Canvas>,
 }
 
 /// Returns the first zero-index output node in an OperationIdMap
@@ -43,7 +45,7 @@ fn get_output_node(operations: &OperationIdMap) -> Option<OperationId> {
 #[test]
 fn test_get_output_node() {
     use painter_data::id_map::IdMapBase;
-    use painter_data::id_map::{OperationId, OperationIdMap};
+    use painter_data::id_map::OperationIdMap;
     use painter_data::operation::Operation;
 
     let mut map = OperationIdMap::default();
@@ -65,14 +67,28 @@ impl PainterRenderer {
     fn new() -> PyResult<Self> {
         let gl = create_gl_context();
 
-        let brush_operator = BrushOperator::new(&gl);
-        Ok(Self { gl, brush_operator })
+        let brush_renderer = BrushRenderer::new(&gl);
+        
+        Ok(Self {
+            gl,
+            brush_renderer,
+            tmp_canvas: None,
+        })
     }
 
     fn render(&mut self, context: &EditContext) {
         println!("Rendering (rust)");
-        let col = &context.image.metadata.canvas_background_color;
+        // let col = &context.image.metadata.canvas_background_color;
         let graph = &context.image.depgraph;
+
+        let outp_framebuffer_state = framebuffer_state::FrameBufferState::from_current_gl_state(&self.gl);
+
+        if self.tmp_canvas.is_none() {
+            self.tmp_canvas = Some(canvas::Canvas::new(&self.gl, context.image.metadata.preview_canvas_size).expect("Failed to create output canvas"));
+        }
+
+
+        self.tmp_canvas.as_ref().unwrap().make_active(&self.gl);
 
         let output_node = get_output_node(&context.image.operations).expect("No Output Node");
         let mut order_of_operations = graph.get_children_recursive_breadth_first(output_node);
@@ -81,58 +97,32 @@ impl PainterRenderer {
         // From here we coud in theory remove any operations that haven't changed since last time and are in cache.
         // but for now that isn't implemented.
 
-        unsafe {
-            self.gl.clear_color(col.r, col.g, col.b, col.a);
-            self.gl.disable(glow::DEPTH);
-            self.gl
-                .clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
-        }
 
         for operation_id in order_of_operations.iter() {
+
             match context.image.operations.get_unchecked(operation_id) {
                 Operation::Stroke(stroke_data) => {
-                    self.brush_operator.perform_stroke(&self.gl, stroke_data);
+                    self.brush_renderer.perform_stroke(&self.gl, stroke_data);
                 }
                 Operation::Output(_id) => {}
                 Operation::Tag(_name) => {}
                 Operation::Composite(_name) => {}
             }
         }
-    }
-}
 
-use painter_data::id_map::BrushId;
-
-struct BrushOperator {
-    brush_shader: shader::SimpleShader,
-    mesh: quad::Quad,
-}
-
-impl BrushOperator {
-    fn new(gl: &glow::Context) -> Self {
-        Self {
-            mesh: quad::Quad::new(gl).expect("Creating Brush Mesh Failed"),
-            brush_shader: shader::SimpleShader::new(
-                gl,
-                include_str!("resources/brush.vert"),
-                include_str!("resources/brush.frag"),
-            )
-            .expect("Loading Brush Shader Failed"),
-        }
-    }
-
-    fn perform_stroke(&mut self, gl: &glow::Context, stroke: &StrokeData) {
-        println!("Drawing Stroke");
-
-        self.brush_shader.bind(gl);
-        self.mesh
-            .bind(gl, self.brush_shader.attrib_vertex_positions);
-
+        // Finally we can write to the gtk window:
         unsafe {
-            gl.draw_arrays(glow::TRIANGLE_STRIP, 0, 4);
+            outp_framebuffer_state.apply(&self.gl);
+            self.gl.clear_color(0.1, 0.1, 0.1, 1.0);
+            self.gl.disable(glow::DEPTH);
+            self.gl
+                .clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
         }
     }
 }
+
+
+
 
 fn create_gl_context() -> glow::Context {
     info!("Attempting to grab openGL Context");
