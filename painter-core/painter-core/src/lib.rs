@@ -8,12 +8,13 @@ use simple_logger::SimpleLogger;
 use painter_render::PainterRenderer;
 
 #[pyclass]
-struct PainterCore {}
+struct PainterCore {
+}
 
 #[pymethods]
 impl PainterCore {
     #[new]
-    pub fn new() -> PyResult<Self> {
+    pub fn new(py: Python) -> PyResult<Self> {
         SimpleLogger::new().init().unwrap();
 
         Ok(Self {})

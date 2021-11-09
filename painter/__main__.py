@@ -61,18 +61,108 @@ class Painter():
         self.overlay.add_overlay(self.toggle_ui_button)
         self.overlay.add_overlay(self.top_bar)
         
-        self.setup_stylus()
+        self.setup_canvas_events()
 
-        self.canvas.connect("render", self.render)
+        # TODO: find a better place to store this
+        self.zoom_at_gesture_start = None
+        self.angle_at_gesture_start = None
+        self.translation_at_gesture_start = None
+
+        
         self.window.present()
 
         
-    def setup_stylus(self):
-        gesture = Gtk.GestureStylus()
-        self.canvas.add_controller(gesture)
-        gesture.connect("down", self.stylus_down)
-        gesture.connect("motion", self.stylus_move)
-        gesture.connect("up", self.stylus_up)
+    def setup_canvas_events(self):
+        stylus = Gtk.GestureStylus()
+        self.canvas.add_controller(stylus)
+        stylus.connect("down", self.stylus_down)
+        stylus.connect("motion", self.stylus_move)
+        stylus.connect("up", self.stylus_up)
+
+        zoom = Gtk.GestureZoom()
+        self.canvas.add_controller(zoom)
+        zoom.connect("begin", self.scale_changed_start)
+        zoom.connect("end", self.scale_changed_end)
+        zoom.connect("scale-changed", self.scale_changed)
+
+        rotate = Gtk.GestureRotate()
+        self.canvas.add_controller(rotate)
+        rotate.connect("begin", self.angle_changed_start)
+        rotate.connect("end", self.angle_changed_end)
+        rotate.connect("angle-changed", self.angle_changed)
+
+        drag = Gtk.GestureDrag()
+        self.canvas.add_controller(drag)
+        drag.connect("begin", self.drag_start)
+        drag.connect("end", self.drag_end)
+        drag.connect("drag-update", self.drag_changed)
+
+        self.canvas.connect("render", self.render)
+
+    def drag_start(self, event, z):
+        if self.translation_at_gesture_start is not None:
+            print("Angle event starting twice!")
+        self.translation_at_gesture_start = self.context.canvas_transform.translation
+
+    def drag_end(self, event, z):
+        if self.translation_at_gesture_start is None:
+            print("Angle event ending twice!")
+        self.translation_at_gesture_start = None
+
+    def drag_changed(self, event, new_x, new_y):
+        if self.translation_at_gesture_start is None:
+            print("Angle event did not start properly")
+        x, y = self.translation_at_gesture_start
+        alloc = self.canvas.get_allocation()
+        dx = 2 * new_x / alloc.width
+        dy = -2 * new_y / alloc.height
+        self.context.manipulate_canvas(
+            self.context.canvas_transform.zoom,
+            self.context.canvas_transform.angle,
+            [x + dx, y + dy]
+        )
+        self.canvas.queue_draw()
+    
+    
+    def angle_changed_start(self, event, z):
+        if self.angle_at_gesture_start is not None:
+            print("Angle event starting twice!")
+        self.angle_at_gesture_start = self.context.canvas_transform.angle
+
+    def angle_changed_end(self, event, z):
+        if self.angle_at_gesture_start is None:
+            print("Angle event ending twice!")
+        self.angle_at_gesture_start = None
+
+    def angle_changed(self, event, _angle, angle_delta):
+        if self.angle_at_gesture_start is None:
+            print("Angle event did not start properly")
+        self.context.manipulate_canvas(
+            self.context.canvas_transform.zoom,
+            self.angle_at_gesture_start + angle_delta,
+            self.context.canvas_transform.translation
+        )
+        self.canvas.queue_draw()
+
+    def scale_changed_start(self, event, z):
+        if self.zoom_at_gesture_start is not None:
+            print("Zoom event starting twice!")
+        self.zoom_at_gesture_start = self.context.canvas_transform.zoom
+
+    def scale_changed_end(self, event, z):
+        if self.zoom_at_gesture_start is None:
+            print("Zoom event ending twice!")
+        self.zoom_at_gesture_start = None
+
+    def scale_changed(self, event, zoom):
+        if self.zoom_at_gesture_start is None:
+            print("Zoom event did not start properly")
+        self.context.manipulate_canvas(
+            self.zoom_at_gesture_start * zoom,
+            self.context.canvas_transform.angle,
+            self.context.canvas_transform.translation
+        )
+        self.canvas.queue_draw()
 
     def stylus_down(self, event, x, y):
         pressure = event.get_axis(Gdk.AxisUse.PRESSURE).value
@@ -97,7 +187,7 @@ class Painter():
 
 
 def create_toggle_ui_button():
-    toggle_ui_button = Gtk.Button.new_with_label('UI')
+    toggle_ui_button = Gtk.Button.new_with_label('◯')
     toggle_ui_button.set_halign(Gtk.Align.END)
     toggle_ui_button.set_hexpand(False)
     toggle_ui_button.set_valign(Gtk.Align.START)

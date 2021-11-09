@@ -1,8 +1,6 @@
-use glow::HasContext;
 use libc::RTLD_NOW;
 use log::info;
 use pyo3::prelude::*;
-use std::collections::HashMap;
 use std::ffi;
 
 use painter_data::id_map::IdMapBase;
@@ -83,7 +81,6 @@ impl PainterRenderer {
     }
 
     fn render(&mut self, context: &EditContext) {
-        println!("Rendering (rust)");
         // let col = &context.image.metadata.canvas_background_color;
         let graph = &context.image.depgraph;
 

@@ -73,26 +73,33 @@ impl EditContext {
             self.insert_operation_onto = Some(layer_existing_tips[0]);
         }
     }
+
+    pub fn manipulate_canvas(&mut self, zoom: f32, angle: f32, translation: [f32; 2]) {
+        self.canvas_transform.zoom = zoom;
+        self.canvas_transform.angle = angle;
+        self.canvas_transform.translation = translation;
+
+    }
 }
 
 
 #[pyclass]
 #[derive(Clone)]
 pub struct CanvasTransform {
-    #[pyo3(get, set)]
-    scale: f32,
-    #[pyo3(get, set)]
+    #[pyo3(get)]
+    zoom: f32,
+    #[pyo3(get)]
     angle: f32,
-    #[pyo3(get, set)]
+    #[pyo3(get)]
     translation: [f32; 2],
 }
 
 #[pymethods]
 impl CanvasTransform {
     #[new]
-    fn new(scale: f32, angle: f32, translation: [f32; 2]) -> Self {
+    fn new(zoom: f32, angle: f32, translation: [f32; 2]) -> Self {
         Self {
-            scale,
+            zoom,
             angle,
             translation
         }
@@ -102,7 +109,7 @@ impl CanvasTransform {
 impl CanvasTransform {
     pub fn to_mat(&self) -> Mat3 {
         Mat3::from_scale_angle_translation(
-            [self.scale, self.scale].into(),
+            [self.zoom, self.zoom].into(),
             self.angle,
             self.translation.into()
         )
@@ -112,7 +119,7 @@ impl CanvasTransform {
 impl Default for CanvasTransform {
     fn default() -> Self {
         Self {
-            scale: 1.0,
+            zoom: 1.0,
             angle: 0.0,
             translation: [0.0, 0.0],
         }
