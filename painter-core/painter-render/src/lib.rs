@@ -1,7 +1,10 @@
+use glow::HasContext;
 use libc::RTLD_NOW;
 use log::info;
 use pyo3::prelude::*;
 use std::ffi;
+
+use log::warn;
 
 use painter_data::id_map::IdMapBase;
 use painter_tools::context::EditContext;
@@ -11,11 +14,11 @@ use painter_data::operation::Operation;
 
 mod brush_renderer;
 mod canvas;
+mod framebuffer_state;
+mod gl_utils;
+mod output_renderer;
 mod quad;
 mod shader;
-mod framebuffer_state;
-mod output_renderer;
-mod gl_utils;
 
 use brush_renderer::BrushRenderer;
 use output_renderer::OutputRenderer;
@@ -76,7 +79,7 @@ impl PainterRenderer {
             gl,
             brush_renderer,
             tmp_canvas: None,
-            output_renderer, 
+            output_renderer,
         })
     }
 
@@ -84,15 +87,30 @@ impl PainterRenderer {
         // let col = &context.image.metadata.canvas_background_color;
         let graph = &context.image.depgraph;
 
-        let outp_framebuffer_state = framebuffer_state::FrameBufferState::from_current_gl_state(&self.gl);
+        let outp_framebuffer_state =
+            framebuffer_state::FrameBufferState::from_current_gl_state(&self.gl);
 
-        if self.tmp_canvas.is_none() {
-            self.tmp_canvas = Some(canvas::Canvas::new(&self.gl, context.image.metadata.preview_canvas_size, "tmp_canvas").expect("Failed to create output canvas"));
+        if let Some(canv) = self.tmp_canvas.as_ref() {
+            canv.make_active(&self.gl);
+            unsafe {
+                self.gl.clear_color(
+                    context.image.metadata.canvas_background_color.r,
+                    context.image.metadata.canvas_background_color.g,
+                    context.image.metadata.canvas_background_color.b,
+                    context.image.metadata.canvas_background_color.a,
+                );
+                self.gl.clear(glow::COLOR_BUFFER_BIT);
+            }
         } else {
-            
+            self.tmp_canvas = Some(
+                canvas::Canvas::new(
+                    &self.gl,
+                    context.image.metadata.preview_canvas_size,
+                    "tmp_canvas",
+                )
+                .expect("Failed to create output canvas"),
+            );
         }
-
-
 
         let output_node = get_output_node(&context.image.operations).expect("No Output Node");
         let mut order_of_operations = graph.get_children_recursive_breadth_first(output_node);
@@ -104,11 +122,25 @@ impl PainterRenderer {
         for operation_id in order_of_operations.iter() {
             match context.image.operations.get_unchecked(operation_id) {
                 Operation::Stroke(stroke_data) => {
-                    self.brush_renderer.perform_stroke(&self.gl, stroke_data, &self.tmp_canvas.as_ref().unwrap());
+                    if let Some(brush) = context.image.brushes.get(&stroke_data.brush) {
+                        self.brush_renderer.perform_stroke(
+                            &self.gl,
+                            stroke_data,
+                            brush,
+                            &self.tmp_canvas.as_ref().unwrap(),
+                        );
+                    } else {
+                        warn!("Unable to find brush for stroke");
+                    }
                 }
                 Operation::Output(_id) => {
                     let tmp_canvas = self.tmp_canvas.as_ref().unwrap();
-                    self.output_renderer.render(&self.gl, context, &tmp_canvas.texture, &outp_framebuffer_state);
+                    self.output_renderer.render(
+                        &self.gl,
+                        context,
+                        &tmp_canvas.texture,
+                        &outp_framebuffer_state,
+                    );
                 }
                 Operation::Tag(_name) => {}
                 Operation::Composite(_name) => {}
@@ -116,9 +148,6 @@ impl PainterRenderer {
         }
     }
 }
-
-
-
 
 fn create_gl_context() -> glow::Context {
     info!("Attempting to grab openGL Context");

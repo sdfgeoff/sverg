@@ -1,6 +1,7 @@
 use super::quad;
 use super::shader;
 use glow::HasContext;
+use painter_data::brush::Brush;
 use painter_data::stroke::StrokeData;
 
 use super::canvas::Canvas;
@@ -11,7 +12,11 @@ pub struct BrushRenderer {
     vertex_position_buffer: glow::NativeBuffer,
     attrib_stroke_data: u32,
     stroke_data_buffer: glow::Buffer,
+
     uniform_aspect_ratio: glow::UniformLocation,
+    uniform_brush_size: glow::UniformLocation,
+    uniform_brush_flow: glow::UniformLocation,
+    uniform_brush_color: glow::UniformLocation,
 }
 
 impl BrushRenderer {
@@ -54,26 +59,44 @@ impl BrushRenderer {
                 .create_buffer()
                 .expect("Failed to create BrushRenderer vertex buffer");
 
-            
-            let uniform_aspect_ratio =
-            unsafe { gl.get_uniform_location(brush_shader.program, "aspectRatio") }
+            let uniform_aspect_ratio = gl
+                .get_uniform_location(brush_shader.program, "aspectRatio")
                 .expect("Could not find uniform aspectRatio");
 
+            let uniform_brush_size = gl
+                .get_uniform_location(brush_shader.program, "brushSize")
+                .expect("Could not find uniform brushSize");
+            let uniform_brush_flow = gl
+                .get_uniform_location(brush_shader.program, "brushFlow")
+                .expect("Could not find uniform brushFlow");
+            let uniform_brush_color = gl
+                .get_uniform_location(brush_shader.program, "brushColor")
+                .expect("Could not find uniform brushColor");
 
             gl.bind_vertex_array(None);
             Self {
                 vertex_array_obj,
-                uniform_aspect_ratio,
+                
                 vertex_position_buffer,
                 brush_shader,
                 attrib_stroke_data,
                 stroke_data_buffer,
+
+                uniform_aspect_ratio,
+                uniform_brush_size,
+                uniform_brush_flow,
+                uniform_brush_color,
             }
         }
     }
 
-    pub fn perform_stroke(&mut self, gl: &glow::Context, stroke: &StrokeData, canvas: &Canvas) {
-        
+    pub fn perform_stroke(
+        &mut self,
+        gl: &glow::Context,
+        stroke: &StrokeData,
+        brush: &Brush,
+        canvas: &Canvas,
+    ) {
         // We need all our point data layed out in a flat array
         let mut stroke_data_flat = Vec::with_capacity(stroke.points.len() * 4);
         for point in stroke.points.iter() {
@@ -82,10 +105,11 @@ impl BrushRenderer {
             stroke_data_flat.push(point.pressure);
             stroke_data_flat.push(point.time);
         }
-        
         unsafe {
             gl.push_debug_group(glow::DEBUG_SOURCE_APPLICATION, 0, "BrushRenderer");
             gl.bind_vertex_array(Some(self.vertex_array_obj));
+            gl.enable(glow::BLEND);
+            gl.blend_func(glow::SRC_ALPHA, glow::ONE_MINUS_SRC_ALPHA);
         }
 
         canvas.make_active(gl);
@@ -98,14 +122,13 @@ impl BrushRenderer {
 
             gl.vertex_attrib_pointer_f32(
                 self.brush_shader.attrib_vertex_positions, //index: u32,
-                2,                       //size: i32,
-                glow::FLOAT,                   //data_type: u32,
-                false,                   //normalized: bool,
-                0,                       //(core::mem::size_of::<f32>() * 2) as i32, //stride: i32,
-                0,                       //offset: i32
+                2,                                         //size: i32,
+                glow::FLOAT,                               //data_type: u32,
+                false,                                     //normalized: bool,
+                0, //(core::mem::size_of::<f32>() * 2) as i32, //stride: i32,
+                0, //offset: i32
             );
         }
-
 
         // Set up the brush stroke position data:
         unsafe {
@@ -129,8 +152,29 @@ impl BrushRenderer {
         }
 
         // Pass in contextual information
+        unsafe { gl.uniform_1_f32(Some(&self.uniform_aspect_ratio), canvas.aspect_ratio()) }
+
+        // Pass in brush parameters
         unsafe {
-            gl.uniform_1_f32(Some(&self.uniform_aspect_ratio), canvas.aspect_ratio())
+            gl.uniform_3_f32(
+                Some(&self.uniform_brush_size),
+                brush.size.min_value as f32,
+                brush.size.max_value as f32,
+                brush.size.random as f32,
+            );
+            gl.uniform_3_f32(
+                Some(&self.uniform_brush_flow),
+                brush.flow.min_value as f32,
+                brush.flow.max_value as f32,
+                brush.flow.random as f32,
+            );
+            gl.uniform_4_f32(
+                Some(&self.uniform_brush_color),
+                stroke.color.r,
+                stroke.color.g,
+                stroke.color.b,
+                stroke.color.a,
+            );
         }
 
         unsafe {
@@ -140,6 +184,7 @@ impl BrushRenderer {
         unsafe {
             gl.pop_debug_group();
             gl.bind_vertex_array(None);
+            gl.disable(glow::BLEND);
         }
     }
 }
