@@ -19,9 +19,6 @@ pub struct MetaData {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Image {
     #[pyo3(get)]
-    pub file_format_version: (i32, i32, i32),
-
-    #[pyo3(get)]
     pub brushes: BrushIdMap,
 
     #[pyo3(get)]

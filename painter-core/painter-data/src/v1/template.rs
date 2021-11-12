@@ -8,7 +8,6 @@ use crate::operation::Operation;
 
 pub fn create_default_image() -> Image {
     let mut image = Image {
-        file_format_version: (0, 0, 1),
         brushes: BrushIdMap::default(),
         operations: OperationIdMap::default(),
         depgraph: DepGraph::default(),

@@ -54,7 +54,7 @@ class Painter():
         
         # Now that we have the core, we can bind things to it.
         self.toggle_ui_button = create_toggle_ui_button()
-        self.top_bar = create_top_bar()
+        self.top_bar = create_top_bar(self)
         
         self.toggle_ui_button.connect("clicked", lambda _: self.top_bar.hide() if self.top_bar.get_visible() else self.top_bar.show())
         
@@ -207,23 +207,34 @@ def create_toggle_ui_button():
     return toggle_ui_button
 
 
-def create_top_bar():
+def create_top_bar(painter):
     top_box = Gtk.Box()
-    test_button1 = Gtk.Button.new_with_label('Test1')
-    test_button2 = Gtk.Button.new_with_label('Test2')
+    save_button = Gtk.Button.new_with_label('Save')
+    load_button = Gtk.Button.new_with_label('Open')
+
+    def save(_):
+        print("Saving")
+        painter.core.save(painter.context, "test.sveg")
+        painter.canvas.queue_draw()
     
+    def load(_):
+        print("Loading")
+        painter.context = painter.core.load("test.sveg")
+        painter.canvas.queue_draw()
+
+
+    save_button.connect("clicked", save)
+    load_button.connect("clicked", load)
     top_box.set_halign(Gtk.Align.CENTER)
     top_box.set_hexpand(False)
     top_box.set_valign(Gtk.Align.START)
     top_box.set_vexpand(False)
     
-    top_box.append(test_button1)
-    top_box.append(test_button2)
+    top_box.append(save_button)
+    top_box.append(load_button)
     
     return top_box
     
-
-
 
 
 def start():

@@ -26,7 +26,12 @@ pub struct EditContext {
 impl Default for EditContext {
     fn default() -> Self {
         let image = create_default_image();
+        Self::new_with_image(image)
+    }
+}
 
+impl EditContext {
+    pub fn new_with_image(image: Image) -> Self {
         EditContext {
             image,
             insert_operation_onto: None,

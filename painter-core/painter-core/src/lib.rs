@@ -6,6 +6,7 @@ use painter_tools::context::EditContext;
 use simple_logger::SimpleLogger;
 
 use painter_render::PainterRenderer;
+use painter_data::{write_into, load_from_reader};
 
 #[pyclass]
 struct PainterCore {
@@ -17,7 +18,19 @@ impl PainterCore {
     pub fn new(py: Python) -> PyResult<Self> {
         SimpleLogger::new().init().unwrap();
 
-        Ok(Self {})
+        Ok(Self {
+        })
+    }
+
+    pub fn save(&self, context: EditContext, filename: String) {
+        let buffer = std::fs::File::create(filename).expect("Failed to create file");
+        write_into(&context.image, buffer).expect("Failed to write");
+    }
+
+    pub fn load(&self, filename: String) -> EditContext {
+        let buffer = std::fs::File::open(filename).expect("Failed to open file");
+        let image = load_from_reader(buffer).expect("Failed to read");
+        EditContext::new_with_image(image)
     }
 }
 
