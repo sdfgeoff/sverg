@@ -6,7 +6,7 @@ use glow::HasContext;
 /// draw onto.
 pub struct FrameBufferState {
     framebuffer: glow::NativeFramebuffer,
-    resolution: [i32; 4],
+    pub resolution: [i32; 4],
 }
 
 impl FrameBufferState {

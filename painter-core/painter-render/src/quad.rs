@@ -16,6 +16,7 @@ pub struct Quad {
 
 impl Quad {
     pub fn new(gl: &Context) -> Result<Self, QuadError> {
+        // todo!("Deprecate this file. I think vao's allows me to do this stuff better? IDK.")
         let position_buffer =
             unsafe { upload_array_f32(gl, vec![0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0])? };
         Ok(Self { position_buffer })
@@ -24,7 +25,7 @@ impl Quad {
     pub fn bind(&self, gl: &Context, attrib_vertex_positions: u32) {
         unsafe {
             gl.enable_vertex_attrib_array(attrib_vertex_positions);
-            gl.bind_buffer(ARRAY_BUFFER, Some(self.position_buffer));
+            gl.bind_buffer(ARRAY_BUFFER, Some(dbg!(self.position_buffer)));
 
             gl.vertex_attrib_pointer_f32(
                 attrib_vertex_positions, //index: u32,
@@ -70,7 +71,7 @@ unsafe fn upload_array_f32(gl: &Context, vertices: Vec<f32>) -> Result<Buffer, Q
     Ok(vbo)
 }
 
-fn as_u8_slice(v: &[f32]) -> &[u8] {
+pub fn as_u8_slice(v: &[f32]) -> &[u8] {
     unsafe {
         std::slice::from_raw_parts(
             v.as_ptr() as *const u8,

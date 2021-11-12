@@ -4,13 +4,13 @@ use serde::{Deserialize, Serialize};
 #[pyclass]
 #[derive(PartialEq, Debug, Default, Serialize, Deserialize, Clone)]
 pub struct Color {
-    #[pyo3(get, set)]
+    #[pyo3(get)]
     pub r: f32,
-    #[pyo3(get, set)]
+    #[pyo3(get)]
     pub g: f32,
-    #[pyo3(get, set)]
+    #[pyo3(get)]
     pub b: f32,
-    #[pyo3(get, set)]
+    #[pyo3(get)]
     pub a: f32,
 }
 

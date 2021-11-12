@@ -103,8 +103,8 @@ pub fn create_canvas_texture(gl: &glow::Context) -> Result<glow::Texture, Canvas
             glow::TEXTURE_MIN_FILTER,
             glow::LINEAR_MIPMAP_LINEAR as i32,
         );
-        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_S, glow::REPEAT as i32);
-        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_T, glow::REPEAT as i32);
+        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_S, glow::CLAMP_TO_EDGE as i32);
+        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_T, glow::CLAMP_TO_EDGE as i32);
 
         assert_eq!(gl.get_error(), glow::NO_ERROR);
     }

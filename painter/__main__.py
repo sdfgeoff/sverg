@@ -96,8 +96,11 @@ class Painter():
         drag.connect("begin", self.drag_start)
         drag.connect("end", self.drag_end)
         drag.connect("drag-update", self.drag_changed)
+        drag.set_touch_only(True)
 
         self.canvas.connect("render", self.render)
+
+        # TODO: Consider using get_last_event() so we don't need to store the *_at_gesture_start
 
     def drag_start(self, event, z):
         if self.translation_at_gesture_start is not None:
@@ -137,6 +140,7 @@ class Painter():
     def angle_changed(self, event, _angle, angle_delta):
         if self.angle_at_gesture_start is None:
             print("Angle event did not start properly")
+        angle_delta *= -1  # We define our coordinate system as counter-clockwide positive, GTK has clockwise-positive
         self.context.manipulate_canvas(
             self.context.canvas_transform.zoom,
             self.angle_at_gesture_start + angle_delta,
@@ -166,11 +170,19 @@ class Painter():
 
     def stylus_down(self, event, x, y):
         pressure = event.get_axis(Gdk.AxisUse.PRESSURE).value
+        alloc = self.canvas.get_allocation()
+        x = 2 * x / alloc.width - 1
+        y = -2 * y / alloc.height + 1
         self.brush_tool.start_stroke(self.context, x, y, pressure)
         self.canvas.queue_draw()
         
     def stylus_move(self, event, x, y):
         pressure = event.get_axis(Gdk.AxisUse.PRESSURE).value
+        alloc = self.canvas.get_allocation()
+        x = 2 * x / alloc.width + 1
+        y = -2 * y / alloc.height + 1
+
+        print(x, y)
         self.brush_tool.continue_stroke(self.context, x, y, pressure)
         self.canvas.queue_draw()
     
