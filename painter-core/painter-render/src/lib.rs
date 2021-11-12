@@ -90,7 +90,8 @@ impl PainterRenderer {
         let outp_framebuffer_state =
             framebuffer_state::FrameBufferState::from_current_gl_state(&self.gl);
 
-        if let Some(canv) = self.tmp_canvas.as_ref() {
+        if let Some(canv) = self.tmp_canvas.as_mut() {
+            canv.resize(&self.gl, context.image.metadata.preview_canvas_size);
             canv.make_active(&self.gl);
             unsafe {
                 self.gl.clear_color(

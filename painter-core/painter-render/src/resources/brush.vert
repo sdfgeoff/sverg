@@ -27,9 +27,10 @@ void main() {
         float size = evalPressureSetting(brushSize, pressure);
         flow = evalPressureSetting(brushFlow, pressure);
 
-        
         screen_pos *= size;
-        screen_pos += aStrokeData.xy;
+        vec2 offset = aStrokeData.xy;
+        offset.x /= aspectRatio;
+        screen_pos += offset;
 
         
         

@@ -83,7 +83,15 @@ impl EditContext {
         self.canvas_transform.zoom = zoom;
         self.canvas_transform.angle = angle;
         self.canvas_transform.translation = translation;
+    }
 
+    /// Converts from screen coordinates (range -1, 1 on x/y) to the canvas coordinates
+    /// as transformed by manipulate_canvas. This allows drawing on a rotated canvas.
+    pub fn screen_coords_to_canvas_coords(&self, x: f32, y: f32) -> [f32; 2] {
+        let invec = glam::Vec2::new(x, y);
+        let transform = self.canvas_transform.to_mat().inverse();
+        let vec = transform.transform_point2(invec);
+        [vec.x, vec.y]
     }
 }
 

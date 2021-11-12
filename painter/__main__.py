@@ -141,6 +141,7 @@ class Painter():
         alloc = self.canvas.get_allocation()
         dx = 2 * new_x / alloc.width
         dy = -2 * new_y / alloc.height
+        dx *= alloc.width / alloc.height
         self.context.manipulate_canvas(
             self.context.canvas_transform.zoom,
             self.context.canvas_transform.angle,
@@ -195,8 +196,10 @@ class Painter():
         alloc = self.canvas.get_allocation()
         x = 2 * x / alloc.width - 1
         y = -2 * y / alloc.height + 1
-        self.time_at_stroke_start = time.time()
+        x *= alloc.width / alloc.height
+        x, y = self.context.screen_coords_to_canvas_coords(x, y)
         self.brush_tool.start_stroke(self.context, x, y, pressure)
+        self.time_at_stroke_start = time.time()
         self.canvas.queue_draw()
         
     def stylus_move(self, event, x, y):
@@ -204,6 +207,8 @@ class Painter():
         alloc = self.canvas.get_allocation()
         x = 2 * x / alloc.width - 1
         y = -2 * y / alloc.height + 1
+        x *= alloc.width / alloc.height
+        x, y = self.context.screen_coords_to_canvas_coords(x, y)
         self.brush_tool.continue_stroke(self.context, x, y, pressure, time.time() - self.time_at_stroke_start)
         self.canvas.queue_draw()
     

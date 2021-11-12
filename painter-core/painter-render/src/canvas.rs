@@ -1,5 +1,6 @@
 use glow::HasContext;
 use std::convert::TryInto;
+use log::info;
 
 use super::gl_utils::{color_attachment_int_to_gl, TextureFormat};
 
@@ -46,11 +47,10 @@ impl Canvas {
         };
         let attachment = color_attachment_int_to_gl(0);
 
-        let levels = { (resolution[0] as f32).log2().ceil() as i32 };
-
-        let format = TextureFormat::RGBA32F;
-
         unsafe {
+            // let levels = { (resolution[0] as f32).log2().ceil() as i32 };
+            let format = TextureFormat::RGBA32F;
+
             gl.bind_texture(glow::TEXTURE_2D, Some(texture));
             // For textures that can change size we use TexImage2d
             gl.tex_image_2d(
@@ -83,6 +83,30 @@ impl Canvas {
         })
     }
 
+    pub fn resize(&mut self, gl: &glow::Context, resolution: [u32; 2]) {
+        if resolution != self.resolution {
+            self.resolution = resolution;
+            unsafe {
+                info!("resizing_canvas");
+                let format = TextureFormat::RGBA32F;
+
+                gl.bind_texture(glow::TEXTURE_2D, Some(self.texture));
+                // For textures that can change size we use TexImage2d
+                gl.tex_image_2d(
+                    glow::TEXTURE_2D,
+                    0,
+                    format.to_sized_internal_format() as i32,
+                    self.resolution[0].try_into().unwrap(),
+                    self.resolution[1].try_into().unwrap(),
+                    0,
+                    format.to_format(), // If we were passing in an existing image into data, this would be meaningful
+                    format.to_type(), // If we were passing in an existing image into data, this would be meaningful
+                    None, // but we are passing in None here, so the above two values are ignored.
+                );
+                gl.generate_mipmap(glow::TEXTURE_2D);
+            }
+        }
+    }
 
     pub fn aspect_ratio(&self) -> f32 {
         (self.resolution[0] as f32) / (self.resolution[1] as f32)

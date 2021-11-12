@@ -182,9 +182,10 @@ impl BrushRenderer {
         }
 
         unsafe {
-            gl.pop_debug_group();
             gl.bind_vertex_array(None);
             gl.disable(glow::BLEND);
+            gl.pop_debug_group();
+            
         }
     }
 }
