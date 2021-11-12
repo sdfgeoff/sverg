@@ -25,7 +25,7 @@ impl Quad {
     pub fn bind(&self, gl: &Context, attrib_vertex_positions: u32) {
         unsafe {
             gl.enable_vertex_attrib_array(attrib_vertex_positions);
-            gl.bind_buffer(ARRAY_BUFFER, Some(dbg!(self.position_buffer)));
+            gl.bind_buffer(ARRAY_BUFFER, Some(self.position_buffer));
 
             gl.vertex_attrib_pointer_f32(
                 attrib_vertex_positions, //index: u32,

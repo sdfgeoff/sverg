@@ -87,7 +87,9 @@ impl PainterRenderer {
         let outp_framebuffer_state = framebuffer_state::FrameBufferState::from_current_gl_state(&self.gl);
 
         if self.tmp_canvas.is_none() {
-            self.tmp_canvas = Some(canvas::Canvas::new(&self.gl, context.image.metadata.preview_canvas_size).expect("Failed to create output canvas"));
+            self.tmp_canvas = Some(canvas::Canvas::new(&self.gl, context.image.metadata.preview_canvas_size, "tmp_canvas").expect("Failed to create output canvas"));
+        } else {
+            
         }
 
 
@@ -99,8 +101,6 @@ impl PainterRenderer {
 
         // From here we coud in theory remove any operations that haven't changed since last time and are in cache.
         // but for now that isn't implemented.
-
-
         for operation_id in order_of_operations.iter() {
 
             match context.image.operations.get_unchecked(operation_id) {

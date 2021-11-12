@@ -1,7 +1,7 @@
 use glow::HasContext;
 use std::convert::TryInto;
 
-use super::gl_utils::{TextureFormat, color_attachment_int_to_gl};
+use super::gl_utils::{color_attachment_int_to_gl, TextureFormat};
 
 pub struct Canvas {
     framebuffer: glow::Framebuffer,
@@ -15,13 +15,20 @@ pub enum CanvasError {
     CreateTextureFailed(String),
 }
 
-
 impl Canvas {
-    pub fn new(gl: &glow::Context, resolution: [u32; 2]) -> Result<Self, CanvasError> {
+    pub fn new(gl: &glow::Context, resolution: [u32; 2], name: &str) -> Result<Self, CanvasError> {
         let framebuffer = unsafe {
             gl.create_framebuffer()
                 .map_err(CanvasError::CreateFrameBufferFailed)?
         };
+        unsafe {
+            gl.object_label(
+                glow::FRAMEBUFFER,
+                std::mem::transmute(framebuffer),
+                Some(name),
+            )
+        };
+
         // Set it up so we are operating on our framebuffer and have a texture unit to play with
         unsafe {
             gl.bind_framebuffer(glow::FRAMEBUFFER, Some(framebuffer));
@@ -30,6 +37,13 @@ impl Canvas {
         }
 
         let texture = create_canvas_texture(gl)?;
+        unsafe {
+            gl.object_label(
+                glow::TEXTURE,
+                std::mem::transmute(texture),
+                Some(&format!("{}Texture", name)),
+            )
+        };
         let attachment = color_attachment_int_to_gl(0);
 
         let levels = { (resolution[0] as f32).log2().ceil() as i32 };
@@ -77,7 +91,6 @@ impl Canvas {
     }
 }
 
-
 /// Create the texture and set it up
 /// Does not allocate storage for the texture.
 pub fn create_canvas_texture(gl: &glow::Context) -> Result<glow::Texture, CanvasError> {
@@ -103,8 +116,16 @@ pub fn create_canvas_texture(gl: &glow::Context) -> Result<glow::Texture, Canvas
             glow::TEXTURE_MIN_FILTER,
             glow::LINEAR_MIPMAP_LINEAR as i32,
         );
-        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_S, glow::CLAMP_TO_EDGE as i32);
-        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_T, glow::CLAMP_TO_EDGE as i32);
+        gl.tex_parameter_i32(
+            glow::TEXTURE_2D,
+            glow::TEXTURE_WRAP_S,
+            glow::CLAMP_TO_EDGE as i32,
+        );
+        gl.tex_parameter_i32(
+            glow::TEXTURE_2D,
+            glow::TEXTURE_WRAP_T,
+            glow::CLAMP_TO_EDGE as i32,
+        );
 
         assert_eq!(gl.get_error(), glow::NO_ERROR);
     }

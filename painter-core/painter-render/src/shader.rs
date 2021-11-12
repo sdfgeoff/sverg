@@ -18,8 +18,10 @@ pub struct SimpleShader {
 }
 
 impl SimpleShader {
-    pub fn new(gl: &Context, vert: &str, frag: &str) -> Result<Self, ShaderError> {
-        let program = unsafe { init_shader_program(gl, vert, frag)? };
+    pub fn new(gl: &Context, vert: &str, frag: &str, name: &str) -> Result<Self, ShaderError> {
+        let program = unsafe {
+            init_shader_program(gl, vert, frag, name)?
+        };
         let attrib_vertex_positions = unsafe {
             gl.get_attrib_location(program, "aVertexPosition")
                 .expect("No vertx positions?")
@@ -65,13 +67,31 @@ pub unsafe fn init_shader_program(
     gl: &Context,
     vert_source: &str,
     frag_source: &str,
+    name: &str,
 ) -> Result<Program, ShaderError> {
+    assert_eq!(gl.get_error(), glow::NO_ERROR);
     let vert_shader = load_shader(gl, VERTEX_SHADER, vert_source)?;
     let frag_shader = load_shader(gl, FRAGMENT_SHADER, frag_source)?;
+
+    gl.object_label(
+        glow::SHADER,
+        std::mem::transmute(vert_shader),
+        Some(&format!("{}Vert", name)),
+    );
+    gl.object_label(
+        glow::SHADER,
+        std::mem::transmute(frag_shader),
+        Some(&format!("{}Frag", name)),
+    );
 
     let shader_program = gl
         .create_program()
         .map_err(ShaderError::ShaderProgramAllocError)?;
+    gl.object_label(
+        glow::PROGRAM,
+        std::mem::transmute(shader_program),
+        Some(&format!("{}Program", name)),
+    );
     gl.attach_shader(shader_program, vert_shader);
     gl.attach_shader(shader_program, frag_shader);
 
@@ -84,6 +104,6 @@ pub unsafe fn init_shader_program(
         gl.delete_shader(frag_shader);
         return Err(ShaderError::ShaderLinkError(compiler_output));
     }
-
+    assert_eq!(gl.get_error(), glow::NO_ERROR);
     Ok(shader_program)
 }

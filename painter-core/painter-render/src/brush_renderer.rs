@@ -18,6 +18,7 @@ impl BrushRenderer {
             gl,
             include_str!("resources/brush.vert"),
             include_str!("resources/brush.frag"),
+            "BrushRenderer"
         )
         .expect("Loading Brush Shader Failed");
         let attrib_stroke_data =
@@ -45,6 +46,10 @@ impl BrushRenderer {
     }
 
     pub fn perform_stroke(&mut self, gl: &glow::Context, stroke: &StrokeData, canvas: &Canvas) {
+        unsafe {
+            gl.push_debug_group(glow::DEBUG_SOURCE_APPLICATION, 0, "BrushRenderer");
+        }
+
         canvas.make_active(gl);
 
         self.brush_shader.bind(gl);
@@ -82,6 +87,10 @@ impl BrushRenderer {
 
         unsafe {
             gl.draw_arrays_instanced(glow::TRIANGLE_STRIP, 0, 4, stroke.points.len() as i32);
+        }
+
+        unsafe {
+            gl.pop_debug_group();
         }
     }
 }

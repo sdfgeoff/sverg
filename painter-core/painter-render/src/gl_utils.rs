@@ -1,4 +1,3 @@
-
 pub fn color_attachment_int_to_gl(int: u32) -> u32 {
     assert!(int <= 10);
     glow::COLOR_ATTACHMENT0 + int
