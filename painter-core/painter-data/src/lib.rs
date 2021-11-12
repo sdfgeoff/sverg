@@ -5,7 +5,7 @@ const CURRENT_FORMAT_VERSION: u32 = 1;
 
 
 
-const HEAD_MAGIC_STR: &[u8] = b"PAINTER_SVEG";
+const HEAD_MAGIC_STR: &[u8] = b"PAINTER_SVERG";
 
 
 #[derive(Debug)]

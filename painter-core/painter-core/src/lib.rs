@@ -32,6 +32,11 @@ impl PainterCore {
         let image = load_from_reader(buffer).expect("Failed to read");
         EditContext::new_with_image(image)
     }
+
+    #[staticmethod]
+    pub fn new_image() -> EditContext {
+        EditContext::default()
+    }
 }
 
 /// A Python module implemented in Rust. The name of this function must match

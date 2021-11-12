@@ -49,9 +49,8 @@ class Painter():
         self.context = painter_core.EditContext()
         self.brush_tool = painter_core.BrushTool()
         self.renderer = None
-        self.brush_tool.set_brush_id(self.context.image.brushes.list_ids()[0]) # TODO: Is there a better way to do this binding between tools and context?
-        self.context.select_layer(self.context.image.layers.list_ids()[0]) # TODO: Is there a better way to select a layer?
-        
+
+
         # Now that we have the core, we can bind things to it.
         self.toggle_ui_button = create_toggle_ui_button()
         self.top_bar = create_top_bar(self)
@@ -69,8 +68,30 @@ class Painter():
         self.translation_at_gesture_start = None
         self.time_at_stroke_start = None
 
+        self._context_changed()
+
         
         self.window.present()
+    
+    def new_image(self):
+        self.context = self.core.new_image()
+        self._context_changed()
+
+    def save_image(self):
+        print("Saving")
+        self.core.save(self.context, "test.sveg")
+    
+    def load_image(self):
+        print("Loading")
+        self.context = self.core.load("test.sveg")
+        self._context_changed()
+    
+    def _context_changed(self):
+        self.brush_tool.set_brush_id(self.context.image.brushes.list_ids()[0]) # TODO: Is there a better way to do this binding between tools and context?
+        self.context.select_layer(self.context.image.layers.list_ids()[0]) # TODO: Is there a better way to select a layer?
+        self.canvas.queue_draw()
+
+
 
         
     def setup_canvas_events(self):
@@ -210,27 +231,16 @@ def create_toggle_ui_button():
 
 def create_top_bar(painter):
     top_box = Gtk.Box()
-    save_button = Gtk.Button.new_with_label('Save')
     load_button = Gtk.Button.new_with_label('Open')
-
-    def save(_):
-        print("Saving")
-        painter.core.save(painter.context, "test.sveg")
-        painter.canvas.queue_draw()
+    save_button = Gtk.Button.new_with_label('Save')
+    new_button = Gtk.Button.new_with_label('New')
     
-    def load(_):
-        print("Loading")
-        painter.context = painter.core.load("test.sveg")
-
-        painter.brush_tool.set_brush_id(painter.context.image.brushes.list_ids()[0]) # TODO: Is there a better way to do this binding between tools and context?
-        painter.context.select_layer(painter.context.image.layers.list_ids()[0]) # TODO: Is there a better way to select a layer?
-        
-
-        painter.canvas.queue_draw()
 
 
-    save_button.connect("clicked", save)
-    load_button.connect("clicked", load)
+
+    new_button.connect("clicked", lambda _: painter.new_image())
+    save_button.connect("clicked", lambda _: painter.save_image())
+    load_button.connect("clicked", lambda _: painter.load_image())
     top_box.set_halign(Gtk.Align.CENTER)
     top_box.set_hexpand(False)
     top_box.set_valign(Gtk.Align.START)
@@ -238,6 +248,7 @@ def create_top_bar(painter):
     
     top_box.append(save_button)
     top_box.append(load_button)
+    top_box.append(new_button)
     
     return top_box
     
