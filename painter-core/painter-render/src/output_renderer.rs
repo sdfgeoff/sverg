@@ -13,7 +13,7 @@ pub struct OutputRenderer {
     uniform_screen_resolution: glow::UniformLocation,
     uniform_canvas_resolution: glow::UniformLocation,
     position_buffer: glow::NativeBuffer,
-    vertex_arrray_obj: glow::NativeVertexArray,
+    vertex_array_obj: glow::NativeVertexArray,
 }
 
 impl OutputRenderer {
@@ -40,11 +40,11 @@ impl OutputRenderer {
             unsafe { gl.get_uniform_location(output_shader.program, "canvasResolution") }
                 .expect("Could not find uniform canvasesolution");
 
-        let vertex_arrray_obj =
+        let vertex_array_obj =
             unsafe { gl.create_vertex_array() }.expect("Failed creating vertex array");
         unsafe {
-            gl.bind_vertex_array(Some(vertex_arrray_obj));
-            gl.object_label(glow::VERTEX_ARRAY, std::mem::transmute(vertex_arrray_obj), Some("OutputRenderVertexArray"));
+            gl.bind_vertex_array(Some(vertex_array_obj));
+            gl.object_label(glow::VERTEX_ARRAY, std::mem::transmute(vertex_array_obj), Some("OutputRenderVertexArray"));
         }
 
         let position_buffer = unsafe { gl.create_buffer() }.expect("Failed creating vertex buffer");
@@ -70,7 +70,7 @@ impl OutputRenderer {
             uniform_screen_resolution,
             uniform_canvas_resolution,
             position_buffer,
-            vertex_arrray_obj,
+            vertex_array_obj,
         }
     }
     pub fn render(
@@ -95,7 +95,7 @@ impl OutputRenderer {
         self.output_shader.bind(gl);
 
         unsafe {
-            gl.bind_vertex_array(Some(self.vertex_arrray_obj));
+            gl.bind_vertex_array(Some(self.vertex_array_obj));
                  
             gl.enable_vertex_attrib_array(self.output_shader.attrib_vertex_positions);
             gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.position_buffer));
@@ -141,7 +141,7 @@ impl OutputRenderer {
         }
 
         unsafe {
-            //gl.bind_vertex_array(None);
+            gl.bind_vertex_array(None);
         }
 
 

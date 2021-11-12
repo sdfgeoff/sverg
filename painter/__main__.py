@@ -179,7 +179,7 @@ class Painter():
     def stylus_move(self, event, x, y):
         pressure = event.get_axis(Gdk.AxisUse.PRESSURE).value
         alloc = self.canvas.get_allocation()
-        x = 2 * x / alloc.width + 1
+        x = 2 * x / alloc.width - 1
         y = -2 * y / alloc.height + 1
 
         print(x, y)

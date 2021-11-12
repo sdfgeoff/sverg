@@ -11,19 +11,43 @@ pub enum QuadError {
 
 /// A four-vertex mesh reaching from 0.0 to 1.0 on each axis
 pub struct Quad {
+    vertex_array_obj: glow::NativeVertexArray,
     position_buffer: Buffer,
 }
 
 impl Quad {
     pub fn new(gl: &Context) -> Result<Self, QuadError> {
-        // todo!("Deprecate this file. I think vao's allows me to do this stuff better? IDK.")
-        let position_buffer =
-            unsafe { upload_array_f32(gl, vec![0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0])? };
-        Ok(Self { position_buffer })
+        
+    let vertex_array_obj =
+        unsafe { gl.create_vertex_array() }.expect("Failed creating vertex array");
+    unsafe {
+        gl.bind_vertex_array(Some(vertex_array_obj));
+        gl.object_label(glow::VERTEX_ARRAY, std::mem::transmute(vertex_array_obj), Some("OutputRenderVertexArray"));
+    }
+
+    let position_buffer = unsafe { gl.create_buffer() }.expect("Failed creating vertex buffer");
+    unsafe {
+        gl.bind_buffer(glow::ARRAY_BUFFER, Some(position_buffer));
+        // gl.object_label(glow::ARRAY_BUFFER, std::mem::transmute(position_buffer), Some("OutputRenderVertexPositionBuffer"));
+        gl.buffer_data_u8_slice(
+            glow::ARRAY_BUFFER,
+            as_u8_slice(&[0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0]),
+            glow::STATIC_DRAW,
+        );
+        assert_eq!(gl.get_error(), glow::NO_ERROR);
+    }
+
+    unsafe {
+        gl.bind_vertex_array(None);
+    }
+
+        Ok(Self { position_buffer, vertex_array_obj })
     }
 
     pub fn bind(&self, gl: &Context, attrib_vertex_positions: u32) {
         unsafe {
+            gl.bind_vertex_array(Some(self.vertex_array_obj));
+
             gl.enable_vertex_attrib_array(attrib_vertex_positions);
             gl.bind_buffer(ARRAY_BUFFER, Some(self.position_buffer));
 
@@ -39,37 +63,6 @@ impl Quad {
     }
 }
 
-/*
-
-            gl.enable_vertex_attrib_array(self.shader_program.attrib_vertex_positions);
-            gl.bind_buffer(
-                glow::ARRAY_BUFFER,
-                Some(quad.position_buffer),
-            );
-            gl.vertex_attrib_pointer_i32(
-                self.shader_program.attrib_vertex_positions,
-                3, // num components
-                glow::FLOAT,
-                //false, // normalize
-                0,     // stride
-                0,     // offset
-            );
-*/
-
-unsafe fn upload_array_f32(gl: &Context, vertices: Vec<f32>) -> Result<Buffer, QuadError> {
-    let vao = gl
-        .create_vertex_array()
-        .map_err(QuadError::BufferCreationFailed)?;
-    gl.bind_vertex_array(Some(vao));
-    let vbo = gl
-        .create_buffer()
-        .map_err(QuadError::BufferCreationFailed)?;
-    gl.bind_buffer(ARRAY_BUFFER, Some(vbo));
-
-    gl.buffer_data_u8_slice(ARRAY_BUFFER, as_u8_slice(&vertices), STATIC_DRAW);
-
-    Ok(vbo)
-}
 
 pub fn as_u8_slice(v: &[f32]) -> &[u8] {
     unsafe {

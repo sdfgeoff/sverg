@@ -6,8 +6,14 @@ out vec2 fragCoordUV;
 
 void main() {
         vec2 screen_pos = aVertexPosition * 2.0 - vec2(1.0);
-        screen_pos *= 0.01;
+        
+        float pressure = aStrokeData.z;
+
+        
+        screen_pos *= 0.05 * pressure;
         screen_pos += aStrokeData.xy;
+        
+
 	fragCoordUV = aVertexPosition;
         gl_Position = vec4(
                 screen_pos,
