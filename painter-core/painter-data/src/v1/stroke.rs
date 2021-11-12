@@ -18,6 +18,11 @@ pub struct StrokePoint {
     /// was drawn. Normalized between 0.0 and 1.0 with 1.0 being pushing really hard
     #[pyo3(get, set)]
     pub pressure: f32,
+
+    /// The time at which this point was added to the stroke relative to the start of
+    /// the stroke. (eg the first stroke will have time = 0)
+    #[pyo3(get, set)]
+    pub time: f32,
 }
 
 #[pyclass]

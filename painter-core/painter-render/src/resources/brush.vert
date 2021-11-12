@@ -4,6 +4,8 @@ in vec2 aVertexPosition;
 in vec4 aStrokeData;
 out vec2 fragCoordUV;
 
+uniform float aspectRatio;
+
 void main() {
         vec2 screen_pos = aVertexPosition * 2.0 - vec2(1.0);
         
@@ -12,6 +14,8 @@ void main() {
         
         screen_pos *= 0.05 * pressure;
         screen_pos += aStrokeData.xy;
+
+        screen_pos.y *= aspectRatio;
         
 
 	fragCoordUV = aVertexPosition;

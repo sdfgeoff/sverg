@@ -83,6 +83,11 @@ impl Canvas {
         })
     }
 
+
+    pub fn aspect_ratio(&self) -> f32 {
+        (self.resolution[0] as f32) / (self.resolution[1] as f32)
+    }
+
     pub fn make_active(&self, gl: &glow::Context) {
         unsafe {
             gl.bind_framebuffer(glow::FRAMEBUFFER, Some(self.framebuffer));

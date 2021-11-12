@@ -53,7 +53,7 @@ impl BrushTool {
                 });
                 let operation_id = context.insert_operation(operation);
                 self.current_operation_id = Some(operation_id);
-                self.continue_stroke(context, x, y, pressure);
+                self.continue_stroke(context, x, y, pressure, 0.0);
             }
             None => {
                 warn!(target: "brush_tool", "Brush tool does not have active brush")
@@ -61,7 +61,7 @@ impl BrushTool {
         }
     }
 
-    fn continue_stroke(&mut self, context: &mut EditContext, x: f32, y: f32, pressure: f32) {
+    fn continue_stroke(&mut self, context: &mut EditContext, x: f32, y: f32, pressure: f32, time_since_start: f32) {
         if let Some(operation_id) = &self.current_operation_id {
             let stroke = context.image.operations.get_mut_unchecked(operation_id);
             if let Operation::Stroke(stroke_data) = stroke {
@@ -69,6 +69,7 @@ impl BrushTool {
                     position_x: x,
                     position_y: y,
                     pressure,
+                    time: time_since_start 
                 })
             } else {
                 warn!(target: "brush_tool", "Current operation is not stroke");

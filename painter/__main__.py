@@ -16,7 +16,7 @@ gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, Gdk
 
 import painter_core
-
+import time
 
 
 
@@ -67,6 +67,7 @@ class Painter():
         self.zoom_at_gesture_start = None
         self.angle_at_gesture_start = None
         self.translation_at_gesture_start = None
+        self.time_at_stroke_start = None
 
         
         self.window.present()
@@ -173,6 +174,7 @@ class Painter():
         alloc = self.canvas.get_allocation()
         x = 2 * x / alloc.width - 1
         y = -2 * y / alloc.height + 1
+        self.time_at_stroke_start = time.time()
         self.brush_tool.start_stroke(self.context, x, y, pressure)
         self.canvas.queue_draw()
         
@@ -181,13 +183,12 @@ class Painter():
         alloc = self.canvas.get_allocation()
         x = 2 * x / alloc.width - 1
         y = -2 * y / alloc.height + 1
-
-        print(x, y)
-        self.brush_tool.continue_stroke(self.context, x, y, pressure)
+        self.brush_tool.continue_stroke(self.context, x, y, pressure, time.time() - self.time_at_stroke_start)
         self.canvas.queue_draw()
     
     def stylus_up(self, event, x, y):
         self.brush_tool.end_stroke()
+        self.time_at_stroke_start = 0.0
         self.canvas.queue_draw()
 
     def render(self, area, ctx):
@@ -220,6 +221,11 @@ def create_top_bar(painter):
     def load(_):
         print("Loading")
         painter.context = painter.core.load("test.sveg")
+
+        painter.brush_tool.set_brush_id(painter.context.image.brushes.list_ids()[0]) # TODO: Is there a better way to do this binding between tools and context?
+        painter.context.select_layer(painter.context.image.layers.list_ids()[0]) # TODO: Is there a better way to select a layer?
+        
+
         painter.canvas.queue_draw()
 
 

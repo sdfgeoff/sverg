@@ -102,7 +102,6 @@ impl PainterRenderer {
         // From here we coud in theory remove any operations that haven't changed since last time and are in cache.
         // but for now that isn't implemented.
         for operation_id in order_of_operations.iter() {
-
             match context.image.operations.get_unchecked(operation_id) {
                 Operation::Stroke(stroke_data) => {
                     self.brush_renderer.perform_stroke(&self.gl, stroke_data, &self.tmp_canvas.as_ref().unwrap());

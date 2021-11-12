@@ -11,6 +11,7 @@ pub struct BrushRenderer {
     vertex_position_buffer: glow::NativeBuffer,
     attrib_stroke_data: u32,
     stroke_data_buffer: glow::Buffer,
+    uniform_aspect_ratio: glow::UniformLocation,
 }
 
 impl BrushRenderer {
@@ -53,9 +54,16 @@ impl BrushRenderer {
                 .create_buffer()
                 .expect("Failed to create BrushRenderer vertex buffer");
 
+            
+            let uniform_aspect_ratio =
+            unsafe { gl.get_uniform_location(brush_shader.program, "aspectRatio") }
+                .expect("Could not find uniform aspectRatio");
+
+
             gl.bind_vertex_array(None);
             Self {
                 vertex_array_obj,
+                uniform_aspect_ratio,
                 vertex_position_buffer,
                 brush_shader,
                 attrib_stroke_data,
@@ -72,7 +80,7 @@ impl BrushRenderer {
             stroke_data_flat.push(point.position_x);
             stroke_data_flat.push(point.position_y);
             stroke_data_flat.push(point.pressure);
-            stroke_data_flat.push(0.0);
+            stroke_data_flat.push(point.time);
         }
         
         unsafe {
@@ -118,6 +126,11 @@ impl BrushRenderer {
                 0,                       //offset: i32
             );
             gl.vertex_attrib_divisor(self.attrib_stroke_data, 1);
+        }
+
+        // Pass in contextual information
+        unsafe {
+            gl.uniform_1_f32(Some(&self.uniform_aspect_ratio), canvas.aspect_ratio())
         }
 
         unsafe {
