@@ -38,7 +38,7 @@ impl EditContext {
             color: Color {
                 r: 0.0,
                 g: 0.0,
-                b: 0.0,
+                b: 1.0,
                 a: 1.0,
             },
             canvas_transform: CanvasTransform::default(),
@@ -92,6 +92,14 @@ impl EditContext {
         let transform = self.canvas_transform.to_mat().inverse();
         let vec = transform.transform_point2(invec);
         [vec.x, vec.y]
+    }
+
+    /// Sets the color that will be used by the various tools - brush, bucket fill etc.
+    pub fn set_primary_color(&mut self, r: f32, g: f32, b: f32, a: f32) {
+        self.color.r = r;
+        self.color.g = g;
+        self.color.b = b;
+        self.color.a = a;
     }
 }
 

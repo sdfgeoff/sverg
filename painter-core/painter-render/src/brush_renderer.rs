@@ -155,7 +155,8 @@ impl BrushRenderer {
             gl.push_debug_group(glow::DEBUG_SOURCE_APPLICATION, 0, "BrushRenderer");
             gl.bind_vertex_array(Some(self.vertex_array_obj));
             gl.enable(glow::BLEND);
-            gl.blend_func(glow::SRC_ALPHA, glow::ONE_MINUS_SRC_ALPHA);
+            gl.blend_equation(glow::FUNC_ADD);
+            gl.blend_func_separate(glow::SRC_ALPHA, glow::ONE_MINUS_SRC_ALPHA, glow::SRC1_ALPHA, glow::ONE);
         }
 
 
