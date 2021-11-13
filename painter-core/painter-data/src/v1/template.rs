@@ -50,6 +50,7 @@ pub fn create_default_image() -> Image {
         .insert_as_child(canvas_base, background_blend_op_id);
 
     image.brushes.insert(Brush {
+        name: "Spiral".to_string(),
         bitmap: BrushGlyph::Png(include_bytes!("resources/spiral.png").to_vec()),
         size: PressureSettings {
             min_value: 0.0,

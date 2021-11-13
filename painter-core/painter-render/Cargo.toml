@@ -19,3 +19,5 @@ painter_data = { path = "../painter-data" }
 painter_tools = { path = "../painter-tools" }
 log = "0.4.14"
 simple_logger = "1.13.0"
+png = "0.16.8"
+

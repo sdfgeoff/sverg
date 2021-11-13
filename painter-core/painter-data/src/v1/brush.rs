@@ -12,6 +12,7 @@ pub struct PressureSettings {
 #[pyclass]
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub struct Brush {
+    pub name: String,
     pub bitmap: BrushGlyph,
     pub size: PressureSettings,
     pub flow: PressureSettings,
@@ -19,7 +20,7 @@ pub struct Brush {
     pub gap: PressureSettings,
 }
 
-#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
+#[derive(PartialEq, Debug, Serialize, Deserialize, Clone, Hash, Eq)]
 pub enum BrushGlyph {
     Png(Vec<u8>),
 }

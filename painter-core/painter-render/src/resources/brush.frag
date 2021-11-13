@@ -5,6 +5,8 @@ precision mediump float;
 in vec2 fragCoordUV;
 out vec4 FragColor;
 
+uniform sampler2D brushTexture;
+
 in float flow;
 
 uniform vec4 brushColor;
@@ -12,10 +14,9 @@ uniform vec4 brushColor;
 void main() {
 	
 	// brush_shape should come from a texture, but for now this will do
-	float brush_shape = clamp(1.0 - length(fragCoordUV * 2.0 - 1.0), 0.0, 1.0);
-
-	vec4 outCol = brushColor;
-	outCol.a *= brush_shape * flow;
+	vec4 outCol = texture(brushTexture, fragCoordUV);
+	outCol.a *= flow;
+	outCol *= brushColor;
 
 	FragColor = outCol;
 }
