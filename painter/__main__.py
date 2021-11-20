@@ -66,6 +66,8 @@ class Painter():
     def save_image(self):
         print("Saving")
         self.core.save(self.context, "test.sveg")
+
+        print(self.context.generate_dotgraph())
     
     def load_image(self):
         print("Loading")

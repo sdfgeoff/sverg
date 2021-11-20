@@ -1,20 +1,23 @@
  - [X] Transform stroke points based on canvas context
  - [X] Load brush images
  - [X] Sort out brush transparency blending
+ - [X] Check operation insertion order (why do strokes render underneath)
+ - [x] Export depsgraph as dotfile for analysis
+
+ - [ ] Separate brushes from glyps (brushes are painter-concepts, glyphs are sverg concepts)
  - [ ] Decide on architecture for python side
-    - [ ] Create color picker for brush
+    - [X] Create color picker for brush
+    - [ ] Create size slider for brush
     - [ ] Create brush editor
  - [ ] Add brush rotation as an option 
- - [ ] Redo file format as tar-of-file-structure
-
- - [ ] Rename to sverg
- - [ ] Rename "child" in depsgraph to "depends_on"
  
- - [ ] Export depsgraph as dotfile for analysis
+ - [ ] Redo file format as non-binary-dump
+ - [ ] Rename to sverg
+
+ - [ ] Rename "child" in depsgraph to "depends_on" 
  - [ ] Create layer select widget
  - [ ] Create layer blend operation
- - [ ] Check operation insertion order (why do strokes render underneath)
- - [ ] Sort out render order
+ - [ ] Sort out render order for layers
  - [ ] Sort out render caching.
  
  

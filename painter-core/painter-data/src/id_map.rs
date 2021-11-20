@@ -16,6 +16,7 @@ use super::operation::Operation;
 /// used to find a new unique key.
 pub trait IncrId {
     fn increment(&mut self) -> Self;
+    fn val(&self) -> u64;
 }
 
 /// Making 1000 strokes per second we will run out of ID's
@@ -75,6 +76,9 @@ impl IncrId for BrushId {
         self.0 += 1;
         out
     }
+    fn val(&self) -> u64 {
+        self.0
+    }
 }
 impl IncrId for LayerId {
     fn increment(&mut self) -> Self {
@@ -82,12 +86,18 @@ impl IncrId for LayerId {
         self.0 += 1;
         out
     }
+    fn val(&self) -> u64 {
+        self.0
+    }
 }
 impl IncrId for OperationId {
     fn increment(&mut self) -> Self {
         let out = Self(self.0);
         self.0 += 1;
         out
+    }
+    fn val(&self) -> u64 {
+        self.0
     }
 }
 

@@ -57,7 +57,7 @@ impl EditContext {
         let new_op_id = self.image.operations.insert(operation);
         if let Some(op_onto) = self.insert_operation_onto {
             self.image.depgraph.operate_on(new_op_id, op_onto);
-            self.insert_operation_onto = Some(op_onto);
+            self.insert_operation_onto = Some(new_op_id);
         } else {
             warn!("Created orphan operation - no known location to place in depgraph")
         }
@@ -100,6 +100,38 @@ impl EditContext {
         self.color.g = g;
         self.color.b = b;
         self.color.a = a;
+    }
+
+    /// Generates a string representation of the depgraph that can be visualized using
+    /// dot https://en.wikipedia.org/wiki/DOT_(graph_description_language)
+    /// This is useful for debugging
+    pub fn generate_dotgraph(&self) -> String {
+        use painter_data::id_map::IncrId;
+        let mut outstr = "digraph depsgraph {\n".to_string();
+        for (operation_id, operation) in self.image.operations.iter() {
+            
+            match operation {
+                Operation::Composite(_dat) => {
+                    outstr += &format!("    op_{} [label=\"Operation {} {:?}\"];\n", operation_id.val(), operation_id.val(), operation);
+                }
+                Operation::Tag(str) => {
+                    outstr += &format!("    op_{} [label=\"Operation {} Tag({})\"];\n", operation_id.val(), operation_id.val(), str);
+                }
+                Operation::Output(_id) => {
+                    outstr += &format!("    op_{} [label=\"Operation {} {:?}\"];\n", operation_id.val(), operation_id.val(), operation);
+                }
+                Operation::Stroke(_dat) => {
+                    outstr += &format!("    op_{} [label=\"Operation {} Stroke\"];\n", operation_id.val(), operation_id.val());
+                }
+            }
+
+            for child_id in self.image.depgraph.get_children(*operation_id) {
+                outstr += &format!("    op_{} -> op_{};\n", operation_id.val(), child_id.val());
+            }
+        }
+
+        outstr += "\n}\n";
+        outstr
     }
 }
 
