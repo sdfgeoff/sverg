@@ -30,6 +30,8 @@ pub struct StrokePoint {
 pub struct StrokeData {
     #[pyo3(get, set)]
     pub color: Color,
+
+
     #[pyo3(get, set)]
     pub brush: BrushId,
     #[pyo3(get, set)]
