@@ -1,6 +1,6 @@
 use glow::HasContext;
-use std::convert::TryInto;
 use log::info;
+use std::convert::TryInto;
 
 use super::gl_utils::{color_attachment_int_to_gl, TextureFormat};
 

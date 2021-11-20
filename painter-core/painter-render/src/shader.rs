@@ -19,9 +19,7 @@ pub struct SimpleShader {
 
 impl SimpleShader {
     pub fn new(gl: &Context, vert: &str, frag: &str, name: &str) -> Result<Self, ShaderError> {
-        let program = unsafe {
-            init_shader_program(gl, vert, frag, name)?
-        };
+        let program = unsafe { init_shader_program(gl, vert, frag, name)? };
         let attrib_vertex_positions = unsafe {
             gl.get_attrib_location(program, "aVertexPosition")
                 .expect("No vertx positions?")

@@ -123,7 +123,7 @@ impl PainterRenderer {
         for operation_id in order_of_operations.iter() {
             match context.image.operations.get_unchecked(operation_id) {
                 Operation::Stroke(stroke_data) => {
-                    if let Some(brush) = context.image.brushes.get(&stroke_data.brush) {
+                    if let Some(brush) = context.image.brushes.get(&stroke_data.glyph) {
                         self.brush_renderer.perform_stroke(
                             &self.gl,
                             stroke_data,

@@ -15,21 +15,26 @@ impl FrameBufferState {
             let as_u32 = gl.get_parameter_i32(glow::FRAMEBUFFER_BINDING) as u32;
             std::mem::transmute::<u32, glow::NativeFramebuffer>(as_u32)
         };
-        let mut resolution = [0,0,0,0];
+        let mut resolution = [0, 0, 0, 0];
         unsafe {
             gl.get_parameter_i32_slice(glow::VIEWPORT, &mut resolution);
         }
-    
+
         FrameBufferState {
             framebuffer,
-            resolution
+            resolution,
         }
     }
 
     pub fn apply(&self, gl: &glow::Context) {
         unsafe {
-            gl.bind_framebuffer(glow::FRAMEBUFFER, Some(self.framebuffer)); 
-            gl.viewport(self.resolution[0], self.resolution[1], self.resolution[2], self.resolution[3]);
+            gl.bind_framebuffer(glow::FRAMEBUFFER, Some(self.framebuffer));
+            gl.viewport(
+                self.resolution[0],
+                self.resolution[1],
+                self.resolution[2],
+                self.resolution[3],
+            );
         }
-    } 
+    }
 }

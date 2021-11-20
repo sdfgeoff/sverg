@@ -22,7 +22,7 @@ impl OutputRenderer {
             gl,
             include_str!("resources/output.vert"),
             include_str!("resources/output.frag"),
-            "OutputRenderer"
+            "OutputRenderer",
         )
         .expect("Loading Output Shader Failed");
 
@@ -44,7 +44,11 @@ impl OutputRenderer {
             unsafe { gl.create_vertex_array() }.expect("Failed creating vertex array");
         unsafe {
             gl.bind_vertex_array(Some(vertex_array_obj));
-            gl.object_label(glow::VERTEX_ARRAY, std::mem::transmute(vertex_array_obj), Some("OutputRenderVertexArray"));
+            gl.object_label(
+                glow::VERTEX_ARRAY,
+                std::mem::transmute(vertex_array_obj),
+                Some("OutputRenderVertexArray"),
+            );
         }
 
         let position_buffer = unsafe { gl.create_buffer() }.expect("Failed creating vertex buffer");
@@ -96,14 +100,14 @@ impl OutputRenderer {
 
         unsafe {
             gl.bind_vertex_array(Some(self.vertex_array_obj));
-                 
+
             gl.enable_vertex_attrib_array(self.output_shader.attrib_vertex_positions);
             gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.position_buffer));
             gl.vertex_attrib_pointer_f32(
                 self.output_shader.attrib_vertex_positions, //index: u32,
-                2,                                     //size: i32,
-                glow::FLOAT,                           //data_type: u32,
-                false,                                 //normalized: bool,
+                2,                                          //size: i32,
+                glow::FLOAT,                                //data_type: u32,
+                false,                                      //normalized: bool,
                 0, //(core::mem::size_of::<f32>() * 2) as i32, //stride: i32,
                 0, //offset: i32
             );
@@ -143,7 +147,6 @@ impl OutputRenderer {
         unsafe {
             gl.bind_vertex_array(None);
         }
-
 
         unsafe {
             gl.pop_debug_group();

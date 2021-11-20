@@ -5,12 +5,11 @@ use painter_tools::context::EditContext;
 
 use simple_logger::SimpleLogger;
 
+use painter_data::{load_from_reader, write_into};
 use painter_render::PainterRenderer;
-use painter_data::{write_into, load_from_reader};
 
 #[pyclass]
-struct PainterCore {
-}
+struct PainterCore {}
 
 #[pymethods]
 impl PainterCore {
@@ -18,8 +17,7 @@ impl PainterCore {
     pub fn new(py: Python) -> PyResult<Self> {
         SimpleLogger::new().init().unwrap();
 
-        Ok(Self {
-        })
+        Ok(Self {})
     }
 
     pub fn save(&self, context: EditContext, filename: String) {

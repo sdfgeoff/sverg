@@ -9,8 +9,8 @@ use log::info;
 
 use std::collections::HashMap;
 
-use png::{BitDepth, ColorType};
 use png;
+use png::{BitDepth, ColorType};
 
 use super::canvas::Canvas;
 
@@ -21,12 +21,12 @@ pub struct BrushRenderer {
     brush_shader: shader::SimpleShader,
     vertex_position_buffer: glow::NativeBuffer,
     attrib_stroke_data: u32,
+    attrib_color_data: u32,
+
     stroke_data_buffer: glow::Buffer,
+    color_data_buffer: glow::Buffer,
 
     uniform_aspect_ratio: glow::UniformLocation,
-    uniform_brush_size: glow::UniformLocation,
-    uniform_brush_flow: glow::UniformLocation,
-    uniform_brush_color: glow::UniformLocation,
     uniform_brush_texture: glow::UniformLocation,
 }
 
@@ -41,23 +41,37 @@ impl BrushRenderer {
         .expect("Loading Brush Shader Failed");
 
         unsafe {
-            let attrib_stroke_data = gl
-                .get_attrib_location(brush_shader.program, "aStrokeData")
-                .expect("Finding aStrokeData failed");
-
             let vertex_array_obj = gl
                 .create_vertex_array()
                 .expect("Failed creating vertex array");
 
             gl.bind_vertex_array(Some(vertex_array_obj));
+
+            // StrokeData Array
+            let attrib_stroke_data = gl
+                .get_attrib_location(brush_shader.program, "aStrokeData")
+                .expect("Finding aStrokeData failed");
+
             gl.object_label(
                 glow::VERTEX_ARRAY,
                 std::mem::transmute(vertex_array_obj),
                 Some("BrushRendererVertexArray"),
             );
+            let stroke_data_buffer = gl
+                .create_buffer()
+                .expect("Failed to create BrushRenderer vertex buffer");
 
+            // colorData Array
+            let attrib_color_data = gl
+                .get_attrib_location(brush_shader.program, "aColorData")
+                .expect("Finding aColorData failed");
+
+            let color_data_buffer = gl
+                .create_buffer()
+                .expect("Failed to create BrushRenderer vertex buffer");
+
+            // Vertex Position Array
             let vertex_position_buffer = gl.create_buffer().expect("Failed creating vertex buffer");
-
             gl.bind_buffer(glow::ARRAY_BUFFER, Some(vertex_position_buffer));
             gl.buffer_data_u8_slice(
                 glow::ARRAY_BUFFER,
@@ -66,23 +80,10 @@ impl BrushRenderer {
             );
             assert_eq!(gl.get_error(), glow::NO_ERROR);
 
-            let stroke_data_buffer = gl
-                .create_buffer()
-                .expect("Failed to create BrushRenderer vertex buffer");
-
             let uniform_aspect_ratio = gl
                 .get_uniform_location(brush_shader.program, "aspectRatio")
                 .expect("Could not find uniform aspectRatio");
 
-            let uniform_brush_size = gl
-                .get_uniform_location(brush_shader.program, "brushSize")
-                .expect("Could not find uniform brushSize");
-            let uniform_brush_flow = gl
-                .get_uniform_location(brush_shader.program, "brushFlow")
-                .expect("Could not find uniform brushFlow");
-            let uniform_brush_color = gl
-                .get_uniform_location(brush_shader.program, "brushColor")
-                .expect("Could not find uniform brushColor");
             let uniform_brush_texture = gl
                 .get_uniform_location(brush_shader.program, "brushTexture")
                 .expect("Could not find uniform brushTexture");
@@ -96,11 +97,10 @@ impl BrushRenderer {
                 brush_shader,
                 attrib_stroke_data,
                 stroke_data_buffer,
+                attrib_color_data,
+                color_data_buffer,
 
                 uniform_aspect_ratio,
-                uniform_brush_size,
-                uniform_brush_flow,
-                uniform_brush_color,
                 uniform_brush_texture,
             }
         }
@@ -144,27 +144,56 @@ impl BrushRenderer {
         canvas: &Canvas,
     ) {
         // We need all our point data layed out in a flat array
-        let mut stroke_data_flat = Vec::with_capacity(stroke.points.len() * 4);
-        for point in stroke.points.iter() {
-            stroke_data_flat.push(point.position_x);
-            stroke_data_flat.push(point.position_y);
-            stroke_data_flat.push(point.pressure);
-            stroke_data_flat.push(point.time);
+        let mut stroke_data_flat = Vec::with_capacity(stroke.position_array.len() * 4);
+        let mut color_data_flat = Vec::with_capacity(stroke.position_array.len() * 4);
+        for (point_id, position) in stroke.position_array.iter().enumerate() {
+            let size = stroke.size
+                * stroke
+                    .size_array
+                    .get(point_id)
+                    .expect("Size array dimension < position array dimension");
+            let angle = stroke
+                .angle_array
+                .get(point_id)
+                .expect("Angle array dimension < position array dimension");
+            let color = stroke.color.multiply(
+                stroke
+                    .color_array
+                    .get(point_id)
+                    .expect("Color array dimension < position array dimension"),
+            );
+
+            stroke_data_flat.push(position[0]);
+            stroke_data_flat.push(position[1]);
+            stroke_data_flat.push(size);
+            stroke_data_flat.push(*angle);
+
+            color_data_flat.push(color.r);
+            color_data_flat.push(color.g);
+            color_data_flat.push(color.b);
+            color_data_flat.push(color.a);
+
+            // stroke_data_flat.push(point.position_y);
+            // stroke_data_flat.push(point.pressure);
+            // stroke_data_flat.push(point.time);
         }
         unsafe {
             gl.push_debug_group(glow::DEBUG_SOURCE_APPLICATION, 0, "BrushRenderer");
             gl.bind_vertex_array(Some(self.vertex_array_obj));
             gl.enable(glow::BLEND);
             gl.blend_equation(glow::FUNC_ADD);
-            gl.blend_func_separate(glow::SRC_ALPHA, glow::ONE_MINUS_SRC_ALPHA, glow::SRC1_ALPHA, glow::ONE);
+            gl.blend_func_separate(
+                glow::SRC_ALPHA,
+                glow::ONE_MINUS_SRC_ALPHA,
+                glow::SRC1_ALPHA,
+                glow::ONE,
+            );
         }
-
 
         let brush_texture = self.load_brush_texture(gl, brush);
 
         canvas.make_active(gl);
         self.brush_shader.bind(gl);
-
 
         // Set up the mesh vertex position:
         unsafe {
@@ -202,39 +231,49 @@ impl BrushRenderer {
             gl.vertex_attrib_divisor(self.attrib_stroke_data, 1);
         }
 
+
+        // Set up the brush stroke color data:
+        unsafe {
+            gl.enable_vertex_attrib_array(self.attrib_color_data);
+            gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.color_data_buffer));
+            gl.buffer_data_u8_slice(
+                glow::ARRAY_BUFFER,
+                quad::as_u8_slice(&color_data_flat),
+                glow::STATIC_DRAW,
+            );
+
+            gl.vertex_attrib_pointer_f32(
+                self.attrib_color_data, //index: u32,
+                4,                       //size: i32,
+                glow::FLOAT,             //data_type: u32,
+                false,                   //normalized: bool,
+                0,                       //(core::mem::size_of::<f32>() * 2) as i32, //stride: i32,
+                0,                       //offset: i32
+            );
+            gl.vertex_attrib_divisor(self.attrib_color_data, 1);
+        }
+
         // Pass in contextual information
         unsafe { gl.uniform_1_f32(Some(&self.uniform_aspect_ratio), canvas.aspect_ratio()) }
 
         // Pass in brush parameters
         unsafe {
-            gl.uniform_3_f32(
-                Some(&self.uniform_brush_size),
-                brush.size.min_value as f32,
-                brush.size.max_value as f32,
-                brush.size.random as f32,
-            );
-            gl.uniform_3_f32(
-                Some(&self.uniform_brush_flow),
-                brush.flow.min_value as f32,
-                brush.flow.max_value as f32,
-                brush.flow.random as f32,
-            );
-            gl.uniform_4_f32(
-                Some(&self.uniform_brush_color),
-                stroke.color.r,
-                stroke.color.g,
-                stroke.color.b,
-                stroke.color.a,
-            );
-
             let brush_texture_unit_id = 0;
             gl.active_texture(gl_utils::texture_unit_id_to_gl(brush_texture_unit_id));
             gl.bind_texture(glow::TEXTURE_2D, Some(brush_texture));
-            gl.uniform_1_i32(Some(&self.uniform_brush_texture), brush_texture_unit_id as i32);
+            gl.uniform_1_i32(
+                Some(&self.uniform_brush_texture),
+                brush_texture_unit_id as i32,
+            );
         }
 
         unsafe {
-            gl.draw_arrays_instanced(glow::TRIANGLE_STRIP, 0, 4, stroke.points.len() as i32);
+            gl.draw_arrays_instanced(
+                glow::TRIANGLE_STRIP,
+                0,
+                4,
+                stroke.position_array.len() as i32,
+            );
         }
 
         unsafe {
@@ -249,7 +288,7 @@ fn load_brush_into_texture(gl: &glow::Context, brush: &Brush, texture: &glow::Te
     unsafe {
         gl.active_texture(gl_utils::texture_unit_id_to_gl(0));
         gl.bind_texture(glow::TEXTURE_2D, Some(*texture));
-        
+
         gl.object_label(
             glow::TEXTURE_2D,
             std::mem::transmute(*texture),
@@ -316,3 +355,4 @@ fn load_brush_into_texture(gl: &glow::Context, brush: &Brush, texture: &glow::Te
         }
     }
 }
+

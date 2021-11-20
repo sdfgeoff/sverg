@@ -14,6 +14,17 @@ pub struct Color {
     pub a: f32,
 }
 
+impl Color {
+    pub fn multiply(&self, other: &Self) -> Self {
+        Self {
+            r: self.r * other.r,
+            g: self.g * other.g,
+            b: self.b * other.b,
+            a: self.a * other.a,
+        }
+    }
+}
+
 #[derive(FromPyObject, PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub enum BlendMode {
     Mix(f32),

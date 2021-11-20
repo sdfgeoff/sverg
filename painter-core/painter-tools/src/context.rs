@@ -4,10 +4,10 @@ use pyo3::prelude::*;
 use painter_data::image::Image;
 use painter_data::template::create_default_image;
 
+use glam::Mat3;
 use painter_data::color_primitives::Color;
 use painter_data::id_map::{IdMapBase, LayerId, OperationId};
 use painter_data::operation::Operation;
-use glam::Mat3;
 
 #[pyclass]
 #[derive(Clone)]
@@ -103,7 +103,6 @@ impl EditContext {
     }
 }
 
-
 #[pyclass]
 #[derive(Clone)]
 pub struct CanvasTransform {
@@ -122,7 +121,7 @@ impl CanvasTransform {
         Self {
             zoom,
             angle,
-            translation
+            translation,
         }
     }
 }
@@ -132,7 +131,7 @@ impl CanvasTransform {
         Mat3::from_scale_angle_translation(
             [self.zoom, self.zoom].into(),
             self.angle,
-            self.translation.into()
+            self.translation.into(),
         )
     }
 }

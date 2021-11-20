@@ -13,7 +13,7 @@ pub fn create_default_image() -> Image {
         depgraph: DepGraph::default(),
         layers: LayerIdMap::default(),
         metadata: MetaData {
-            preview_canvas_size: [1920*2, 1080*2],
+            preview_canvas_size: [1920 * 2, 1080 * 2],
             canvas_background_color: Color {
                 r: 1.0,
                 g: 1.0,

@@ -8,9 +8,6 @@ pub fn texture_unit_id_to_gl(int: u32) -> u32 {
     glow::TEXTURE0 + int
 }
 
-
-
-
 /// The precision and number of channels used for a buffer
 /// Not all of these formats work as render targets. In my tests
 /// RGBA8 and RGBA32F work on Chrome and Firefox.

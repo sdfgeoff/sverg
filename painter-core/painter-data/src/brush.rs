@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 #[pyclass]
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub struct PressureSettings {
-    pub min_value: f64,
-    pub max_value: f64,
-    pub random: f64,
+    pub min_value: f32,
+    pub max_value: f32,
+    pub random: f32,
 }
 
 #[pyclass]

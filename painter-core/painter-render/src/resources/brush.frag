@@ -7,16 +7,12 @@ out vec4 FragColor;
 
 uniform sampler2D brushTexture;
 
-in float flow;
+in vec4 color;
 
-uniform vec4 brushColor;
 
 void main() {
-	
-	// brush_shape should come from a texture, but for now this will do
 	vec4 outCol = texture(brushTexture, fragCoordUV);
-	outCol.a *= flow;
-	outCol *= brushColor;
+	outCol *= color;
 
 	FragColor = outCol;
 }
