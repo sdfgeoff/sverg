@@ -3,11 +3,11 @@ use pyo3::prelude::*;
 
 use painter_data::color_primitives::BlendMode;
 // use painter_data::color_primitives::Color;
+use painter_data::brush::PressureSettings;
 use painter_data::color_primitives::Color;
 use painter_data::id_map::{BrushId, IdMapBase, OperationId};
 use painter_data::operation::Operation;
 use painter_data::stroke::StrokeData;
-use painter_data::brush::PressureSettings;
 
 use super::context::EditContext;
 
@@ -17,6 +17,9 @@ pub struct BrushTool {
     blend_mode: BlendMode,
     current_operation_id: Option<OperationId>,
     brush_id: Option<BrushId>,
+
+    #[pyo3(get, set)]
+    size: f32,
 }
 
 impl Default for BrushTool {
@@ -25,6 +28,7 @@ impl Default for BrushTool {
             blend_mode: BlendMode::Mix(1.0),
             current_operation_id: None,
             brush_id: None,
+            size: 0.1,
         }
     }
 }
@@ -53,7 +57,7 @@ impl BrushTool {
                     position_array: Vec::new(),
                     angle_array: Vec::new(),
                     color_array: Vec::new(),
-                    size: 1.0,
+                    size: self.size,
                     size_array: Vec::new(),
                     blend_mode: self.blend_mode.clone(),
                 });
@@ -77,10 +81,12 @@ impl BrushTool {
     ) {
         if let Some(operation_id) = &self.current_operation_id {
             let stroke = context.image.operations.get_mut_unchecked(operation_id);
-            let brush = context.image.brushes.get_unchecked(self.brush_id.as_ref().expect("No Active Brush"));
+            let brush = context
+                .image
+                .brushes
+                .get_unchecked(self.brush_id.as_ref().expect("No Active Brush"));
 
             if let Operation::Stroke(stroke_data) = stroke {
-                
                 stroke_data.position_array.push([x, y]);
                 stroke_data.angle_array.push(0.0);
                 stroke_data.color_array.push(Color {
@@ -89,7 +95,9 @@ impl BrushTool {
                     b: 1.0,
                     a: evaluate_pressure_setting(&brush.flow, pressure),
                 });
-                stroke_data.size_array.push(evaluate_pressure_setting(&brush.size, pressure));
+                stroke_data
+                    .size_array
+                    .push(evaluate_pressure_setting(&brush.size, pressure));
             } else {
                 warn!(target: "brush_tool", "Current operation is not stroke");
             }
@@ -102,7 +110,6 @@ impl BrushTool {
         self.current_operation_id = None;
     }
 }
-
 
 fn evaluate_pressure_setting(setting: &PressureSettings, pressure: f32) -> f32 {
     return setting.min_value + pressure * (setting.max_value - setting.min_value);

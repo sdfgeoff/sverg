@@ -109,19 +109,37 @@ impl EditContext {
         use painter_data::id_map::IncrId;
         let mut outstr = "digraph depsgraph {\n".to_string();
         for (operation_id, operation) in self.image.operations.iter() {
-            
             match operation {
                 Operation::Composite(_dat) => {
-                    outstr += &format!("    op_{} [label=\"Operation {} {:?}\"];\n", operation_id.val(), operation_id.val(), operation);
+                    outstr += &format!(
+                        "    op_{} [label=\"Operation {} {:?}\"];\n",
+                        operation_id.val(),
+                        operation_id.val(),
+                        operation
+                    );
                 }
                 Operation::Tag(str) => {
-                    outstr += &format!("    op_{} [label=\"Operation {} Tag({})\"];\n", operation_id.val(), operation_id.val(), str);
+                    outstr += &format!(
+                        "    op_{} [label=\"Operation {} Tag({})\"];\n",
+                        operation_id.val(),
+                        operation_id.val(),
+                        str
+                    );
                 }
                 Operation::Output(_id) => {
-                    outstr += &format!("    op_{} [label=\"Operation {} {:?}\"];\n", operation_id.val(), operation_id.val(), operation);
+                    outstr += &format!(
+                        "    op_{} [label=\"Operation {} {:?}\"];\n",
+                        operation_id.val(),
+                        operation_id.val(),
+                        operation
+                    );
                 }
                 Operation::Stroke(_dat) => {
-                    outstr += &format!("    op_{} [label=\"Operation {} Stroke\"];\n", operation_id.val(), operation_id.val());
+                    outstr += &format!(
+                        "    op_{} [label=\"Operation {} Stroke\"];\n",
+                        operation_id.val(),
+                        operation_id.val()
+                    );
                 }
             }
 

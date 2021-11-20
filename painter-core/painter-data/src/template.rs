@@ -54,7 +54,7 @@ pub fn create_default_image() -> Image {
         bitmap: BrushGlyph::Png(include_bytes!("resources/spiral.png").to_vec()),
         size: PressureSettings {
             min_value: 0.0,
-            max_value: 0.1,
+            max_value: 1.0,
             random: 0.0,
         },
         flow: PressureSettings {

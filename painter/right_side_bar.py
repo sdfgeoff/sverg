@@ -33,7 +33,9 @@ class RightBar(Gtk.Box):
 
         self.size_slider = Gtk.Scale.new_with_range(Gtk.Orientation.VERTICAL, 0.0, 1.0, 0.001)
         self.size_slider.set_vexpand(True)
+        self.size_slider.set_inverted(True)
         self.size_slider.set_valign(Gtk.Align.FILL)
+        self.size_slider.connect('change-value', self.set_size)
         self.append(self.size_slider)
 
         size_icon = Gtk.Image.new_from_file(ICON_BRUSH_SIZE)
@@ -41,6 +43,7 @@ class RightBar(Gtk.Box):
 
         self.opacity_slider = Gtk.Scale.new_with_range(Gtk.Orientation.VERTICAL, 0.0, 1.0, 0.001)
         self.opacity_slider.set_vexpand(True)
+        self.opacity_slider.set_inverted(True)
         self.opacity_slider.set_valign(Gtk.Align.FILL)
         self.opacity_slider.connect('change-value', self.set_alpha)
         self.append(self.opacity_slider)
@@ -80,6 +83,10 @@ class RightBar(Gtk.Box):
             alpha,
         )
 
+    def set_size(self, *args):
+        size = self.size_slider.get_value()
+        self.painter.brush_tool.size = size
+        
 
         
         

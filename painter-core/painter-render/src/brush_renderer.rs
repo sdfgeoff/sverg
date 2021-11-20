@@ -231,7 +231,6 @@ impl BrushRenderer {
             gl.vertex_attrib_divisor(self.attrib_stroke_data, 1);
         }
 
-
         // Set up the brush stroke color data:
         unsafe {
             gl.enable_vertex_attrib_array(self.attrib_color_data);
@@ -244,11 +243,11 @@ impl BrushRenderer {
 
             gl.vertex_attrib_pointer_f32(
                 self.attrib_color_data, //index: u32,
-                4,                       //size: i32,
-                glow::FLOAT,             //data_type: u32,
-                false,                   //normalized: bool,
-                0,                       //(core::mem::size_of::<f32>() * 2) as i32, //stride: i32,
-                0,                       //offset: i32
+                4,                      //size: i32,
+                glow::FLOAT,            //data_type: u32,
+                false,                  //normalized: bool,
+                0,                      //(core::mem::size_of::<f32>() * 2) as i32, //stride: i32,
+                0,                      //offset: i32
             );
             gl.vertex_attrib_divisor(self.attrib_color_data, 1);
         }
@@ -355,4 +354,3 @@ fn load_brush_into_texture(gl: &glow::Context, brush: &Brush, texture: &glow::Te
         }
     }
 }
-
