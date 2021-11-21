@@ -1,4 +1,4 @@
-use crate::brush::{Brush, BrushGlyph, PressureSettings};
+use crate::brush::{Brush, Glyph, PressureSettings};
 use crate::color_primitives::{BlendMode, Color};
 use crate::depgraph::DepGraph;
 use crate::id_map::{BrushIdMap, IdMapBase, LayerIdMap, OperationIdMap};
@@ -51,7 +51,7 @@ pub fn create_default_image() -> Image {
 
     image.brushes.insert(Brush {
         name: "Spiral".to_string(),
-        bitmap: BrushGlyph::Png(include_bytes!("resources/spiral.png").to_vec()),
+        bitmap: Glyph::Png(include_bytes!("resources/spiral.png").to_vec()),
         size: PressureSettings {
             min_value: 0.0,
             max_value: 1.0,

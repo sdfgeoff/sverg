@@ -13,7 +13,7 @@ pub struct PressureSettings {
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub struct Brush {
     pub name: String,
-    pub bitmap: BrushGlyph,
+    pub bitmap: Glyph,
     pub size: PressureSettings,
     pub flow: PressureSettings,
     pub scatter: PressureSettings,
@@ -21,6 +21,6 @@ pub struct Brush {
 }
 
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone, Hash, Eq)]
-pub enum BrushGlyph {
+pub enum Glyph {
     Png(Vec<u8>),
 }

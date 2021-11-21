@@ -2,7 +2,7 @@ use super::gl_utils;
 use super::quad;
 use super::shader;
 use glow::HasContext;
-use painter_data::brush::{Brush, BrushGlyph};
+use painter_data::brush::{Brush, Glyph};
 use painter_data::stroke::StrokeData;
 
 use log::info;
@@ -15,7 +15,7 @@ use png::{BitDepth, ColorType};
 use super::canvas::Canvas;
 
 pub struct BrushRenderer {
-    brush_texture_store: HashMap<BrushGlyph, glow::Texture>,
+    brush_texture_store: HashMap<Glyph, glow::Texture>,
 
     vertex_array_obj: glow::NativeVertexArray,
     brush_shader: shader::SimpleShader,
@@ -295,7 +295,7 @@ fn load_brush_into_texture(gl: &glow::Context, brush: &Brush, texture: &glow::Te
         );
 
         match &brush.bitmap {
-            BrushGlyph::Png(data) => {
+            Glyph::Png(data) => {
                 let decoder = png::Decoder::new(data.as_slice());
                 let (info, mut reader) = decoder.read_info().unwrap();
                 // Allocate the output buffer.

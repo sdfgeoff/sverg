@@ -8,7 +8,7 @@ use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use super::brush::Brush;
+use super::brush::{Brush, Glyph};
 use super::layer::Layer;
 use super::operation::Operation;
 
@@ -64,7 +64,7 @@ pub struct BrushIdMap {
 #[pyclass]
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct GlyphIdMap {
-    map: HashMap<GlyphId, u8>,
+    map: HashMap<GlyphId, Glyph>,
     id: GlyphId,
 }
 #[pyclass]
@@ -173,6 +173,6 @@ impl_id_struct!(OperationId);
 
 
 impl_id_map_struct!(BrushIdMap, BrushId, Brush);
-impl_id_map_struct!(GlyphIdMap, GlyphId, u8);
+impl_id_map_struct!(GlyphIdMap, GlyphId, Glyph);
 impl_id_map_struct!(LayerIdMap, LayerId, Layer);
 impl_id_map_struct!(OperationIdMap, OperationId, Operation);
