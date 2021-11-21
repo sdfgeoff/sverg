@@ -1,7 +1,7 @@
 use crate::brush::{Brush, Glyph, PressureSettings};
 use crate::color_primitives::{BlendMode, Color};
 use crate::depgraph::DepGraph;
-use crate::id_map::{BrushIdMap, IdMapBase, LayerIdMap, OperationIdMap};
+use crate::id_map::{BrushIdMap, IdMapBase, LayerIdMap, OperationIdMap, GlyphIdMap};
 use crate::image::{Image, MetaData};
 use crate::layer::Layer;
 use crate::operation::Operation;
@@ -10,8 +10,10 @@ pub fn create_default_image() -> Image {
     let mut image = Image {
         brushes: BrushIdMap::default(),
         operations: OperationIdMap::default(),
-        depgraph: DepGraph::default(),
+        glyphs: GlyphIdMap::default(),
         layers: LayerIdMap::default(),
+
+        depgraph: DepGraph::default(),
         metadata: MetaData {
             preview_canvas_size: [1920 * 2, 1080 * 2],
             canvas_background_color: Color {
@@ -49,9 +51,10 @@ pub fn create_default_image() -> Image {
         .depgraph
         .insert_as_child(canvas_base, background_blend_op_id);
 
+
     image.brushes.insert(Brush {
         name: "Spiral".to_string(),
-        bitmap: Glyph::Png(include_bytes!("resources/spiral.png").to_vec()),
+        glyph: Glyph::Png(include_bytes!("resources/spiral.png").to_vec()),
         size: PressureSettings {
             min_value: 0.0,
             max_value: 1.0,

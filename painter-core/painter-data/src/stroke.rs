@@ -1,5 +1,5 @@
 use crate::color_primitives::{BlendMode, Color};
-use crate::id_map::BrushId;
+use crate::id_map::GlyphId;
 use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -15,6 +15,6 @@ pub struct StrokeData {
     pub color: Color,
     pub color_array: Vec<Color>,
 
-    pub glyph: BrushId,
+    pub glyph: GlyphId,
     pub blend_mode: BlendMode,
 }

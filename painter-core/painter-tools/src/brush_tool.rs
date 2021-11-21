@@ -1,11 +1,11 @@
-use log::warn;
+use log::{warn, info};
 use pyo3::prelude::*;
 
 use painter_data::color_primitives::BlendMode;
 // use painter_data::color_primitives::Color;
 use painter_data::brush::PressureSettings;
 use painter_data::color_primitives::Color;
-use painter_data::id_map::{BrushId, IdMapBase, OperationId};
+use painter_data::id_map::{BrushId, IdMapBase, OperationId, GlyphId};
 use painter_data::operation::Operation;
 use painter_data::stroke::StrokeData;
 
@@ -51,19 +51,34 @@ impl BrushTool {
 
         match &self.brush_id {
             Some(brush_id) => {
-                let operation = Operation::Stroke(StrokeData {
-                    color: context.color.clone(),
-                    glyph: brush_id.clone(),
-                    position_array: Vec::new(),
-                    angle_array: Vec::new(),
-                    color_array: Vec::new(),
-                    size: self.size,
-                    size_array: Vec::new(),
-                    blend_mode: self.blend_mode.clone(),
-                });
-                let operation_id = context.insert_operation(operation);
-                self.current_operation_id = Some(operation_id);
-                self.continue_stroke(context, x, y, pressure, 0.0);
+                let brush = context.image.brushes.get_unchecked(brush_id);
+
+                // Find the glyph id
+                let glyph_id: GlyphId = {
+                    match context.image.glyphs.iter().find(|(_id, gly)| {*gly == &brush.glyph}) {
+                        Some((id, _v)) => *id,
+                        None => {
+                            info!(target: "brush_tool", "Loading brush glyph to glyph array");
+                            context.image.glyphs.insert(brush.glyph.clone())
+                        }
+                    }
+                };
+
+
+                    let operation = Operation::Stroke(StrokeData {
+                        color: context.color.clone(),
+                        glyph: glyph_id,
+                        position_array: Vec::new(),
+                        angle_array: Vec::new(),
+                        color_array: Vec::new(),
+                        size: self.size,
+                        size_array: Vec::new(),
+                        blend_mode: self.blend_mode.clone(),
+                    });
+                    let operation_id = context.insert_operation(operation);
+                    self.current_operation_id = Some(operation_id);
+                    self.continue_stroke(context, x, y, pressure, 0.0);
+                
             }
             None => {
                 warn!(target: "brush_tool", "Brush tool does not have active brush")

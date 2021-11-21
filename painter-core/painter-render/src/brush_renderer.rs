@@ -2,7 +2,7 @@ use super::gl_utils;
 use super::quad;
 use super::shader;
 use glow::HasContext;
-use painter_data::brush::{Brush, Glyph};
+use painter_data::brush::Glyph;
 use painter_data::stroke::StrokeData;
 
 use log::info;
@@ -107,8 +107,8 @@ impl BrushRenderer {
     }
 
     /// Ensures a brushes texture is loaded onto the GPU and returns a reference to it
-    pub fn load_brush_texture(&mut self, gl: &glow::Context, brush: &Brush) -> glow::Texture {
-        if let Some(tex) = self.brush_texture_store.get(&brush.bitmap) {
+    pub fn load_glyph_texture(&mut self, gl: &glow::Context, glyph: &Glyph) -> glow::Texture {
+        if let Some(tex) = self.brush_texture_store.get(&glyph) {
             tex.clone()
         } else {
             info!("loading_brush_texture_to_gpu");
@@ -116,23 +116,23 @@ impl BrushRenderer {
                 gl.push_debug_group(
                     glow::DEBUG_SOURCE_APPLICATION,
                     0,
-                    &format!("LoadBrushTexture{}", brush.name),
+                    "LoadGlyphTexture",
                 );
             }
             let new_tex = unsafe {
                 gl.create_texture()
-                    .expect("Failed to create texture for brush")
+                    .expect("Failed to create texture for glyph")
             };
 
-            load_brush_into_texture(gl, brush, &new_tex);
+            load_glyph_into_texture(gl, glyph, &new_tex);
 
             unsafe {
                 gl.pop_debug_group();
             }
 
             self.brush_texture_store
-                .insert(brush.bitmap.clone(), new_tex);
-            self.brush_texture_store.get(&brush.bitmap).unwrap().clone()
+                .insert(glyph.clone(), new_tex);
+            self.brush_texture_store.get(&glyph).unwrap().clone()
         }
     }
 
@@ -140,7 +140,7 @@ impl BrushRenderer {
         &mut self,
         gl: &glow::Context,
         stroke: &StrokeData,
-        brush: &Brush,
+        glyph: &Glyph,
         canvas: &Canvas,
     ) {
         // We need all our point data layed out in a flat array
@@ -190,7 +190,7 @@ impl BrushRenderer {
             );
         }
 
-        let brush_texture = self.load_brush_texture(gl, brush);
+        let glyph_texture = self.load_glyph_texture(gl, glyph);
 
         canvas.make_active(gl);
         self.brush_shader.bind(gl);
@@ -259,7 +259,7 @@ impl BrushRenderer {
         unsafe {
             let brush_texture_unit_id = 0;
             gl.active_texture(gl_utils::texture_unit_id_to_gl(brush_texture_unit_id));
-            gl.bind_texture(glow::TEXTURE_2D, Some(brush_texture));
+            gl.bind_texture(glow::TEXTURE_2D, Some(glyph_texture));
             gl.uniform_1_i32(
                 Some(&self.uniform_brush_texture),
                 brush_texture_unit_id as i32,
@@ -283,18 +283,18 @@ impl BrushRenderer {
     }
 }
 
-fn load_brush_into_texture(gl: &glow::Context, brush: &Brush, texture: &glow::Texture) {
+fn load_glyph_into_texture(gl: &glow::Context, glyph: &Glyph, texture: &glow::Texture) {
     unsafe {
         gl.active_texture(gl_utils::texture_unit_id_to_gl(0));
         gl.bind_texture(glow::TEXTURE_2D, Some(*texture));
 
-        gl.object_label(
-            glow::TEXTURE_2D,
-            std::mem::transmute(*texture),
-            Some(format!("Brush{}", brush.name)),
-        );
+        // gl.object_label(
+        //     glow::TEXTURE_2D,
+        //     std::mem::transmute(*texture),
+        //     Some(format!("Brush{}", brush.name)),
+        // );
 
-        match &brush.bitmap {
+        match &glyph {
             Glyph::Png(data) => {
                 let decoder = png::Decoder::new(data.as_slice());
                 let (info, mut reader) = decoder.read_info().unwrap();

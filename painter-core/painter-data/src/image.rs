@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::color_primitives::Color;
 use crate::depgraph::DepGraph;
-use crate::id_map::{BrushIdMap, LayerIdMap, OperationIdMap};
+use crate::id_map::{BrushIdMap, LayerIdMap, OperationIdMap, GlyphIdMap};
 
 #[pyclass]
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
@@ -20,6 +20,9 @@ pub struct MetaData {
 pub struct Image {
     #[pyo3(get)]
     pub brushes: BrushIdMap,
+
+    #[pyo3(get)]
+    pub glyphs: GlyphIdMap,
 
     #[pyo3(get)]
     pub operations: OperationIdMap,

@@ -13,7 +13,7 @@ pub struct PressureSettings {
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 pub struct Brush {
     pub name: String,
-    pub bitmap: Glyph,
+    pub glyph: Glyph,
     pub size: PressureSettings,
     pub flow: PressureSettings,
     pub scatter: PressureSettings,

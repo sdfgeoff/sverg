@@ -123,11 +123,11 @@ impl PainterRenderer {
         for operation_id in order_of_operations.iter() {
             match context.image.operations.get_unchecked(operation_id) {
                 Operation::Stroke(stroke_data) => {
-                    if let Some(brush) = context.image.brushes.get(&stroke_data.glyph) {
+                    if let Some(glyph) = context.image.glyphs.get(&stroke_data.glyph) {
                         self.brush_renderer.perform_stroke(
                             &self.gl,
                             stroke_data,
-                            brush,
+                            &glyph,
                             &self.tmp_canvas.as_ref().unwrap(),
                         );
                     } else {
