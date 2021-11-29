@@ -252,7 +252,15 @@ name = "painter_data"
 version = "0.1.0"
 dependencies = [
  "bincode",
+ "painter_depgraph",
  "pyo3",
+ "serde",
+]
+
+[[package]]
+name = "painter_depgraph"
+version = "0.1.0"
+dependencies = [
  "serde",
 ]
 
@@ -264,6 +272,7 @@ dependencies = [
  "libc",
  "log",
  "painter_data",
+ "painter_depgraph",
  "painter_tools",
  "png",
  "pyo3",

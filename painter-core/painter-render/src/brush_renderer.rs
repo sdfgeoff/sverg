@@ -113,11 +113,7 @@ impl BrushRenderer {
         } else {
             info!("loading_brush_texture_to_gpu");
             unsafe {
-                gl.push_debug_group(
-                    glow::DEBUG_SOURCE_APPLICATION,
-                    0,
-                    "LoadGlyphTexture",
-                );
+                gl.push_debug_group(glow::DEBUG_SOURCE_APPLICATION, 0, "LoadGlyphTexture");
             }
             let new_tex = unsafe {
                 gl.create_texture()
@@ -130,8 +126,7 @@ impl BrushRenderer {
                 gl.pop_debug_group();
             }
 
-            self.brush_texture_store
-                .insert(glyph.clone(), new_tex);
+            self.brush_texture_store.insert(glyph.clone(), new_tex);
             self.brush_texture_store.get(&glyph).unwrap().clone()
         }
     }

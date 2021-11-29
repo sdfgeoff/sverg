@@ -1,7 +1,8 @@
 use crate::brush::{Brush, Glyph, PressureSettings};
 use crate::color_primitives::{BlendMode, Color};
-use crate::depgraph::DepGraph;
-use crate::id_map::{BrushIdMap, IdMapBase, LayerIdMap, OperationIdMap, GlyphIdMap};
+// use crate::depgraph::DepGraph;
+use painter_depgraph::DepGraph;
+use crate::id_map::{BrushIdMap, GlyphIdMap, IdMapBase, LayerIdMap, OperationIdMap};
 use crate::image::{Image, MetaData};
 use crate::layer::Layer;
 use crate::operation::Operation;
@@ -41,16 +42,14 @@ pub fn create_default_image() -> Image {
         .operations
         .insert(Operation::Tag("BackgroundLayerStart".to_string()));
 
+    image.depgraph.insert(background_layer_start, vec![]);
+    image.depgraph.insert(canvas_base, vec![]);
     image
         .depgraph
-        .insert_as_child(background_blend_op_id, output_op_id);
+        .insert(output_op_id, vec![background_blend_op_id]);
     image
         .depgraph
-        .insert_as_child(background_layer_start, background_blend_op_id);
-    image
-        .depgraph
-        .insert_as_child(canvas_base, background_blend_op_id);
-
+        .insert(background_blend_op_id, vec![background_layer_start, canvas_base]);
 
     image.brushes.insert(Brush {
         name: "Spiral".to_string(),

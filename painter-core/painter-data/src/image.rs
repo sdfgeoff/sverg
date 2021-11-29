@@ -2,8 +2,10 @@ use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::color_primitives::Color;
-use crate::depgraph::DepGraph;
-use crate::id_map::{BrushIdMap, LayerIdMap, OperationIdMap, GlyphIdMap};
+//use crate::depgraph::DepGraph;
+
+use painter_depgraph::DepGraph;
+use crate::id_map::{BrushIdMap, GlyphIdMap, LayerIdMap, OperationIdMap, OperationId};
 
 #[pyclass]
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
@@ -27,7 +29,7 @@ pub struct Image {
     #[pyo3(get)]
     pub operations: OperationIdMap,
 
-    pub depgraph: DepGraph,
+    pub depgraph: DepGraph<OperationId>,
 
     #[pyo3(get)]
     pub layers: LayerIdMap,

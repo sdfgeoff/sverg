@@ -21,3 +21,5 @@ log = "0.4.14"
 simple_logger = "1.13.0"
 png = "0.16.8"
 
+painter_depgraph = { path="../painter-depgraph" }
+

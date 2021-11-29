@@ -11,6 +11,7 @@ use painter_tools::context::EditContext;
 
 use painter_data::id_map::{OperationId, OperationIdMap};
 use painter_data::operation::Operation;
+use painter_depgraph::compute_execution;
 
 mod brush_renderer;
 mod canvas;
@@ -114,14 +115,11 @@ impl PainterRenderer {
         }
 
         let output_node = get_output_node(&context.image.operations).expect("No Output Node");
-        let mut order_of_operations = graph.get_children_recursive_breadth_first(output_node);
-        order_of_operations.reverse();
-        order_of_operations.push(output_node);
-
+        let order_of_operations = compute_execution(&context.image.depgraph, vec![output_node], 10).expect("Computing order of operation failed"); //graph.get_children_recursive_breadth_first(output_node);
         // From here we coud in theory remove any operations that haven't changed since last time and are in cache.
         // but for now that isn't implemented.
-        for operation_id in order_of_operations.iter() {
-            match context.image.operations.get_unchecked(operation_id) {
+        for operation_stage in order_of_operations.iter() {
+            match context.image.operations.get_unchecked(&operation_stage.operation.0.id) {
                 Operation::Stroke(stroke_data) => {
                     if let Some(glyph) = context.image.glyphs.get(&stroke_data.glyph) {
                         self.brush_renderer.perform_stroke(

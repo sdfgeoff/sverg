@@ -12,15 +12,12 @@ use super::brush::{Brush, Glyph};
 use super::layer::Layer;
 use super::operation::Operation;
 
-
-
 /// Keys of the IdMap must implement this trait as it is
 /// used to find a new unique key.
 pub trait IncrId {
     fn increment(&mut self) -> Self;
     fn val(&self) -> u64;
 }
-
 
 pub trait IdMapBase {
     type Index;
@@ -82,7 +79,6 @@ pub struct OperationIdMap {
 
 macro_rules! impl_id_struct {
     ($id_type:ty) => {
-
         impl Default for $id_type {
             fn default() -> Self {
                 Self(0)
@@ -99,14 +95,11 @@ macro_rules! impl_id_struct {
                 self.0
             }
         }
-    }
+    };
 }
-
-
 
 macro_rules! impl_id_map_struct {
     ($map_type: ty,$id_type:ty, $value_type: ty) => {
-
         impl Default for $map_type {
             fn default() -> Self {
                 Self {
@@ -160,17 +153,13 @@ macro_rules! impl_id_map_struct {
                 self.map.keys().cloned().collect()
             }
         }
-
-    }
+    };
 }
-
-
 
 impl_id_struct!(BrushId);
 impl_id_struct!(GlyphId);
 impl_id_struct!(LayerId);
 impl_id_struct!(OperationId);
-
 
 impl_id_map_struct!(BrushIdMap, BrushId, Brush);
 impl_id_map_struct!(GlyphIdMap, GlyphId, Glyph);

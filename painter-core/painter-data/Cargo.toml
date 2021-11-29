@@ -15,3 +15,4 @@ features = ["extension-module"]
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 bincode = "1.3.3"
+painter_depgraph = { path="../painter-depgraph" }

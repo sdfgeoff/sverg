@@ -5,4 +5,5 @@ members = [
     "painter-core",
     "painter-render",
     "painter-tools",
+    "painter-depgraph",
 ]

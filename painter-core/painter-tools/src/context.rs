@@ -56,6 +56,7 @@ impl EditContext {
     pub fn insert_operation(&mut self, operation: Operation) -> OperationId {
         let new_op_id = self.image.operations.insert(operation);
         if let Some(op_onto) = self.insert_operation_onto {
+            todo!("Operate_on operation has not been updated for new depgraph");
             self.image.depgraph.operate_on(new_op_id, op_onto);
             self.insert_operation_onto = Some(new_op_id);
         } else {
@@ -70,7 +71,7 @@ impl EditContext {
             .layers
             .get_unchecked(&layer_id)
             .blend_operation_id;
-        let layer_existing_tips = self.image.depgraph.get_children_mut(layer_blend_op_id);
+        let layer_existing_tips = self.image.depgraph.depends_on(&layer_blend_op_id).expect("Unable to find blend op in depsgraph");
         if layer_existing_tips.len() != 2 {
             warn!("Malformed layer blend operation: incorrect number of dependencies");
             self.insert_operation_onto = None;
@@ -107,49 +108,38 @@ impl EditContext {
     /// This is useful for debugging
     pub fn generate_dotgraph(&self) -> String {
         use painter_data::id_map::IncrId;
-        let mut outstr = "digraph depsgraph {\n".to_string();
-        for (operation_id, operation) in self.image.operations.iter() {
+        self.image.depgraph.generate_dotgraph(&|operation_id| { 
+            let operation = self.image.operations.get_unchecked(operation_id);
             match operation {
                 Operation::Composite(_dat) => {
-                    outstr += &format!(
-                        "    op_{} [label=\"Operation {} {:?}\"];\n",
-                        operation_id.val(),
+                    return format!(
+                        "Operation {} {:?}",
                         operation_id.val(),
                         operation
                     );
                 }
                 Operation::Tag(str) => {
-                    outstr += &format!(
-                        "    op_{} [label=\"Operation {} Tag({})\"];\n",
-                        operation_id.val(),
+                    return format!(
+                        "Operation {} Tag({})",
                         operation_id.val(),
                         str
                     );
                 }
                 Operation::Output(_id) => {
-                    outstr += &format!(
-                        "    op_{} [label=\"Operation {} {:?}\"];\n",
-                        operation_id.val(),
+                    return format!(
+                        "Operation {} {:?}",
                         operation_id.val(),
                         operation
                     );
                 }
                 Operation::Stroke(_dat) => {
-                    outstr += &format!(
-                        "    op_{} [label=\"Operation {} Stroke\"];\n",
-                        operation_id.val(),
+                    return format!(
+                        "Operation {} Stroke",
                         operation_id.val()
                     );
                 }
             }
-
-            for child_id in self.image.depgraph.get_children(*operation_id) {
-                outstr += &format!("    op_{} -> op_{};\n", operation_id.val(), child_id.val());
-            }
-        }
-
-        outstr += "\n}\n";
-        outstr
+        })
     }
 }
 
