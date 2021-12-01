@@ -56,7 +56,6 @@ impl EditContext {
     pub fn insert_operation(&mut self, operation: Operation) -> OperationId {
         let new_op_id = self.image.operations.insert(operation);
         if let Some(op_onto) = self.insert_operation_onto {
-            todo!("Operate_on operation has not been updated for new depgraph");
             self.image.depgraph.operate_on(new_op_id, op_onto);
             self.insert_operation_onto = Some(new_op_id);
         } else {

@@ -78,44 +78,47 @@ impl<I: Hash + Eq + Debug + Clone> DepGraph<I> {
     /// Inserts a new operation into the tree "on top" of where the old one was.
     /// Eg:
     /// ```ignore
-    ///    BaseChild -----> Base ---------> BaseParent
+    ///    A -----> Base ---------> C
     /// ```
     /// Goes to:
     /// ```ignore
-    ///    BaseChild -----> Base ----> New Operation ----> BaseParent
+    ///    A ----> New Operation -----> Base  ----> C
     /// ```
     ///
     ///
     /// If there are multiple dependants and dependees they are moved as follows:
     ///
     /// ```ignore
-    ///                BaseChild2
-    ///                    |
-    ///                    V
-    /// BaseChild1 ---->  Base --------> BaseParent1
-    ///                    |
-    ///                    V
-    ///                 BaseParent2
+    ///              B
+    ///              |
+    ///              V
+    /// A ------->  Base --------> D
+    ///              |
+    ///              V
+    ///              C
     /// ```
     /// Turns into
     ///
     /// ```ignore
-    ///                BaseChild2
-    ///                    |
-    ///                    V
-    /// BaseChild1 ---->  Base---------> New --------> BaseParent1
-    ///                                   |
-    ///                                   V
-    ///                               BaseParent2
+    ///           B
+    ///           |
+    ///           V
+    /// A ---->  New ---------> Base --------> D
+    ///                          |
+    ///                          V
+    ///                          C
     /// ```
     pub fn operate_on(&mut self, new_operation: I, base: I) {
+        let dependees:Vec<I> = self.dependees(&base).iter().map(|x| (*x).clone()).collect();
         let dependants: Vec<I> = self.depends_on(&base).expect("Base not in depsgraph").to_vec();
         assert!(
-            self.nodes.insert(base.clone(), vec![new_operation.clone()]).is_none(),
+            self.nodes.insert(new_operation.clone(), dependants).is_none(),
             "operate_on assumes completely new entry"
         );
-        for dep in dependants {
-            let existing_children = self.nodes.get_mut(&dep).expect("");
+        self.nodes.insert(new_operation.clone(), vec![base.clone()]);
+
+        for depe in dependees {
+            let existing_children = self.nodes.get_mut(&depe).expect("");
             let index = existing_children
                 .iter()
                 .position(|x| *x == base)
@@ -164,47 +167,57 @@ fn test_dotfile() {
 fn test_operate_on_simple() {
     let mut d = DepGraph::default();
 
-    let base_child = 0;
-    let base = 1;
-    let base_parent = 2;
-    let new = 3;
+    let a = "A".to_string();
+    let base = "Base".to_string();
+    let c = "C".to_string();
+    let new = "New".to_string();
 
-    d.insert(base, vec![base_child]);
-    d.insert(base_parent, vec![base]);
+    d.insert(a.clone(), vec![base.clone()]);
+    d.insert(base.clone(), vec![c.clone()]);
+    d.insert(c.clone(), vec![]);
 
-    d.operate_on(new, base);
+    // println!("{}", d.generate_dotgraph(&|x| format!("{}", x)));
 
-    assert!(d.depends_on(&base).expect("Missing dep").contains(&base_child));
+    d.operate_on(new.clone(), base.clone());
+
+    // println!("{}", d.generate_dotgraph(&|x| format!("{}", x)));
+
+    assert!(d.depends_on(&a).expect("Missing dep").contains(&new));
     assert!(d.depends_on(&new).expect("Missing dep").contains(&base));
-    assert!(d.depends_on(&base_parent).expect("Missing dep").contains(&new));
+    assert!(d.depends_on(&base).expect("Missing dep").contains(&c));
 }
 
 #[test]
 fn test_operate_on_with_multi_deps() {
 
-    let mut d = DepGraph::default();
+    let mut graph = DepGraph::default();
 
-    let base_child1 = 0;
-    let base_child2 = 1;
-    let base = 2;
-    let base_parent1 = 3;
-    let base_parent2 = 4;
-    let new = 5;
+    let a = "A";
+    let b = "B";
+    let base = "Base";
+    let c = "C";
+    let d = "D";
+    let new = "New";
 
-    d.insert(base, vec![base_child1]);
-    d.insert(base, vec![base_child2]);
-    d.insert(base_parent1, vec![base]);
-    d.insert(base_parent2, vec![base]);
+    graph.insert(base.clone(), vec![c.clone(), d.clone()]);
+    graph.insert(a.clone(), vec![base.clone()]);
+    graph.insert(b.clone(), vec![base.clone()]);
+    graph.insert(c.clone(), vec![]);
+    graph.insert(d.clone(), vec![]);
 
-    d.operate_on(new, base);
+    // println!("{}", graph.generate_dotgraph(&|x| format!("{}", x)));
 
-    assert!(d.depends_on(&base).expect("Missing Dep").contains(&base_child1));
-    assert!(d.depends_on(&base).expect("Missing Dep").contains(&base_child2));
-    assert!(d.depends_on(&new).expect("Missing Dep").contains(&base));
-    assert!(d.depends_on(&base_parent1).expect("Missing Dep").contains(&new));
-    assert!(d.depends_on(&base_parent2).expect("Missing Dep").contains(&new));
+    graph.operate_on(new.clone(), base.clone());
+
+    // println!("{}", graph.generate_dotgraph(&|x| format!("{}", x)));
+
+    assert!(graph.depends_on(&base).expect("Missing Dep").contains(&c));
+    assert!(graph.depends_on(&base).expect("Missing Dep").contains(&d));
+    assert!(graph.depends_on(&new).expect("Missing Dep").contains(&base));
+    assert!(graph.depends_on(&a).expect("Missing Dep").contains(&new));
+    assert!(graph.depends_on(&b).expect("Missing Dep").contains(&new));
 
     // Parents no longer reference the original base
-    assert!(!d.depends_on(&base_parent1).expect("Missing Dep").contains(&base));
-    assert!(!d.depends_on(&base_parent2).expect("Missing Dep").contains(&base));
+    assert!(!graph.depends_on(&a).expect("Missing Dep").contains(&base));
+    assert!(!graph.depends_on(&b).expect("Missing Dep").contains(&base));
 }
