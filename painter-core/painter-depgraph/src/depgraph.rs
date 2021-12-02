@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct DepGraph<I: Hash + Eq + Debug + Clone> {
-    pub nodes: HashMap<I, Vec<I>>,
+    nodes: HashMap<I, Vec<I>>,
 }
 
 impl<I: Hash + Eq + Debug + Clone> Default for DepGraph<I> {
@@ -72,6 +72,11 @@ impl<I: Hash + Eq + Debug + Clone> DepGraph<I> {
 
     pub fn contains(&self, node: &I) -> bool {
         self.nodes.contains_key(node)
+    }
+
+
+    pub fn iter_nodes(&self) -> std::collections::hash_map::Keys<I, Vec<I>> {
+        self.nodes.keys()
     }
 
 

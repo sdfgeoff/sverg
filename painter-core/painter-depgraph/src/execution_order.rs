@@ -4,17 +4,42 @@ use std::collections::HashSet;
 use super::{Operation, OperationStage};
 use std::iter::FromIterator;
 
+#[derive(Debug, PartialEq)]
+pub enum OrderCalculationError {
+    /// One of the operations depended on a node that is not present in the depgraph
+    /// or for some other reason a lookup for a node in the graph failed.
+    UnknownDependency,
+
+    /// Was unable to complete execution of the graph for the given memory size
+    ResourceLimitExceeded,
+
+    /// Something wrong in the implementation (should not be triggerable by
+    /// external data - even invalid external data). Hopefully should not occur
+    InternalError(String),
+
+    /// No operations can be performed, but not all operations in the graph are included in
+    /// the stages
+    UnexecutedOperations,
+
+    /// Did not manage to compute execution order within a finite amount of operations.
+    /// This may indicate recursion in the input graph....
+    IterationLimitReached
+}
+
+
 pub fn compute_execution<I: std::fmt::Debug + std::hash::Hash + Eq + Clone>(
     graph: &DepGraph<I>,
     output_nodes: Vec<I>,
     memory_size: usize,
-) -> Result<Vec<OperationStage<I>>, u8> {
+) -> Result<Vec<OperationStage<I>>, OrderCalculationError> {
     let mut stages = Vec::new();
 
     let mut prev_memory_state: Vec<Option<I>> = vec![None; memory_size];
+    let mut del_after: Vec<(I, usize)> = Vec::new();
 
     for (addr, output_node) in output_nodes.iter().enumerate() {
-        prev_memory_state[addr] = Some(output_node.clone())
+        prev_memory_state[addr] = Some(output_node.clone());
+        del_after.push((output_node.clone(), addr));
     }
 
     let tmp_first_stage = OperationStage {
@@ -26,29 +51,19 @@ pub fn compute_execution<I: std::fmt::Debug + std::hash::Hash + Eq + Clone>(
             0,
         ),
         allocate_before: vec![],
-        delete_after: output_nodes
-            .iter()
-            .map(|outp| {
-                (
-                    outp.clone(),
-                    prev_memory_state
-                        .iter()
-                        .position(|x| x.as_ref() == Some(outp))
-                        .expect("Mem Consistency Error"),
-                )
-            })
-            .collect(),
+        delete_after: del_after,
     };
     stages.push(tmp_first_stage.clone());
 
-    let mut remaining_ops: HashSet<I> = HashSet::from_iter(graph.nodes.keys().cloned());
+    let mut remaining_ops: HashSet<I> = HashSet::from_iter(graph.iter_nodes().cloned());
 
-    // We will only drain remaining ops if there are no unreachanble entities in the graph, but
-    // this gives us a hard end criteria. Something has gone wrong if we reach the end of this
+    // We know that if each execution stage runs one operation, then we should not need to loop
+    // more than the number of operations to run. 
+    // This gives us a hard end criteria to prevent infinite loops. Something has gone wrong if we reach the end of this
     // without a break
-    // TOOO: check if we reached the end without hitting a break
-    for _ in 0..remaining_ops.len() {
-        let prev_stage = &stages.last().expect("Stages is empty!");
+    let mut did_break_from_loop = false;
+    for _ in 0..remaining_ops.len() + 1 {
+        let prev_stage = &stages.last().ok_or(OrderCalculationError::InternalError("Stages is empty!".to_string()))?;
         let prev_alloc_before_ids: Vec<I> = prev_stage
             .allocate_before
             .iter()
@@ -69,55 +84,49 @@ pub fn compute_execution<I: std::fmt::Debug + std::hash::Hash + Eq + Clone>(
             })
             .collect();
 
-        let available_ops: Vec<I> = new_memory_state
-            .iter()
-            .filter_map(|op| op.clone())
-            .collect();
-        let mut candidate_operations = available_ops.clone();
+        // Op, Dependencies, address
+        let mut candidate_ops: Vec<(I, Vec<I>, usize)> = vec![];
+        
+        for (index, op) in new_memory_state.iter().enumerate() {
+            if let Some(op) = op {
+                let deps = graph.depends_on(&op).ok_or(OrderCalculationError::UnknownDependency)?;
+                candidate_ops.push((op.clone(), deps.clone(), index));
+            }
+        }
+
+        let all_candidate_operations: Vec<I> = candidate_ops.iter().map(|x| x.0.clone()).collect();
         for remaining_op in &remaining_ops {
             // TODO: Likely slow
-            let remaining_op_depends_on = graph.depends_on(&remaining_op).expect("op not in graph");
+            let remaining_op_depends_on = graph.depends_on(&remaining_op).ok_or(OrderCalculationError::UnknownDependency)?;
             for rem in remaining_op_depends_on.iter() {
-                if candidate_operations.contains(rem) {
-                    candidate_operations.retain(|o| o != rem);
+                if all_candidate_operations.contains(rem) {
+                    candidate_ops.retain(|o| &o.0 != rem);
                 }
             }
         }
 
-        if candidate_operations.len() == 0 {
-            assert_eq!(
-                available_ops.len(),
-                0,
-                "Unable to find candidate operation, but there are still some remaining"
-            );
-            assert_eq!(remaining_ops.len(), 0, "Some operations were not executed");
+        if candidate_ops.len() == 0 {
+            if all_candidate_operations.len() != 0 {
+                return Err(OrderCalculationError::InternalError("Unable to find candidate operation, but there are still some remaining".to_string()))
+            }
+            if candidate_ops.len() != 0 {
+                return Err(OrderCalculationError::UnexecutedOperations)
+            }
+            println!("Here");
+            did_break_from_loop = true;
             break;
         }
 
-        //     # Sort the candidate operations so we pick the best one according to some heuristics
-        candidate_operations.sort_unstable_by(|a, b| {
-            let a_dep = graph
-                .depends_on(a)
-                .expect("Unknown Dependency Detected")
-                .len();
-            let b_dep = graph
-                .depends_on(b)
-                .expect("Unknown Dependency Detected")
-                .len();
-            return a_dep.cmp(&b_dep);
+        // Sort the candidate operations so we pick the best one according to some heuristics
+        candidate_ops.sort_unstable_by(|a, b| {
+            let a_deps = a.1.len();
+            let b_deps = b.1.len();
+            return a_deps.cmp(&b_deps);
         });
 
-        let operation: I = candidate_operations
+        let (operation, operation_depends, operation_addr) = candidate_ops
             .first()
-            .expect("No Candidate Operations (should have been caught earlier")
-            .clone();
-        let operation_addr: usize = new_memory_state
-            .iter()
-            .position(|x| x.as_ref() == Some(&operation))
-            .expect("UNable to locate operation (internal error)");
-        let operation_depends: Vec<I> = graph
-            .depends_on(&operation)
-            .expect("Unable to find dep information")
+            .ok_or(OrderCalculationError::InternalError("No candidate operations at time to pick one".to_string()))?
             .clone();
 
         remaining_ops.remove(&operation);
@@ -125,15 +134,17 @@ pub fn compute_execution<I: std::fmt::Debug + std::hash::Hash + Eq + Clone>(
         let mut delete_after: Vec<(I, usize)> = Vec::new();
 
         for dep in operation_depends.iter() {
-            assert!(graph.contains(dep), "Unknown Dependency detected");
+            if !graph.contains(dep) {
+                return Err(OrderCalculationError::UnknownDependency);
+            } 
             let some_dep = Some(dep.clone());
 
             if !new_memory_state.contains(&some_dep) {
                 let available_slot = new_memory_state
                     .iter()
                     .position(|x| x == &None)
-                    .expect("Unable to allocate"); // # ValueError = Out of memory
-                new_memory_state[available_slot] = some_dep; // TODO: Failable
+                    .ok_or(OrderCalculationError::ResourceLimitExceeded)?; // # ValueError = Out of memory
+                new_memory_state[available_slot] = some_dep; // Cannot fail as the slot id s determined above
                 delete_after.push((dep.clone(), available_slot));
             }
         }
@@ -155,12 +166,86 @@ pub fn compute_execution<I: std::fmt::Debug + std::hash::Hash + Eq + Clone>(
 
         prev_memory_state = new_memory_state;
     }
+
+
+    if !did_break_from_loop {
+        return Err(OrderCalculationError::IterationLimitReached);
+    }
+
     stages.reverse();
-    assert_eq!(
-        stages.pop(),
-        Some(tmp_first_stage),
-        "Failed to remove tmp first stage"
-    );
+    if stages.pop() != Some(tmp_first_stage) {
+        return Err(OrderCalculationError::InternalError("First stage should have been temporary".to_string()));
+    }
 
     Ok(stages)
+}
+
+
+#[cfg(test)]
+fn position<I: Clone + Eq>(order: &Vec<OperationStage<I>>, operation: I) -> usize {
+    return order.iter().position(|x| x.operation.0.id == operation).expect("Operation not in execution stages!");
+}
+
+
+#[test]
+fn test_chain_ordering() {
+    let mut graph = DepGraph::default();
+    // 1 -> 2 -> 3
+    graph.insert(1, vec![2]);
+    graph.insert(2, vec![3]);
+    graph.insert(3, vec![]);
+
+    let order = compute_execution(&graph, vec![1], 10).expect("Computation Failed");
+
+    assert!(order.len() == 3);
+    assert!(position(&order, 1) > position(&order, 2));
+    assert!(position(&order, 2) > position(&order, 3));
+}
+
+#[test]
+fn test_wide_ordering() {
+    let mut graph = DepGraph::default();
+    graph.insert(1, vec![2, 3, 4]);
+    graph.insert(2, vec![]);
+    graph.insert(3, vec![]);
+    graph.insert(4, vec![]);
+
+    let order = compute_execution(&graph, vec![1], 10).expect("Computation Failed");
+
+    assert!(order.len() == 4);
+    assert!(position(&order, 1) > position(&order, 2));
+    assert!(position(&order, 1) > position(&order, 3));
+    assert!(position(&order, 1) > position(&order, 4));
+}
+
+
+#[test]
+fn test_unknown_dep_1() {
+    let mut graph = DepGraph::default();
+    graph.insert(1, vec![2]);
+
+    let order = compute_execution(&graph, vec![1], 10);
+ 
+    assert_eq!(
+        order.unwrap_err(),
+        OrderCalculationError::UnknownDependency
+    );
+}
+
+#[test]
+fn test_unknown_dep_2() {
+    let mut graph = DepGraph::default();
+    graph.insert(1, vec![]);
+
+    let order: Result<_, OrderCalculationError> = compute_execution(&graph, vec![2], 10);
+
+    assert_eq!(
+        order.unwrap_err(),
+        OrderCalculationError::UnknownDependency
+    );
+}
+
+#[test]
+fn test_unexecuted() {
+    todo!("Write remaining tests for the compute_execution function")
 }
