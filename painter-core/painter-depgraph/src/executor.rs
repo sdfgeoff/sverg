@@ -1,16 +1,22 @@
 use std::fmt::Debug;
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct LocatedOperation<I: Clone + Debug> {
+    pub id: I,
+    pub addr: usize,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct Operation<I: Clone> {
     pub id: I,
     pub depends_on: Vec<I>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct OperationStage<I: Clone> {
+pub struct OperationStage<I: Clone + Debug> {
     pub operation: (Operation<I>, usize),
-    pub allocate_before: Vec<(I, usize)>,
-    pub delete_after: Vec<(I, usize)>,
+    pub allocate_before: Vec<LocatedOperation<I>>,
+    pub delete_after: Vec<LocatedOperation<I>>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -80,9 +86,12 @@ fn fmt_memory<I: Debug>(memory: &Vec<(Option<I>, bool)>) -> String {
 /// You specify the operations it should execute and the number of registers available to the machine.
 ///
 /// No work is actually performed, but it may be useful to inspect the operation of this executor and to ensure any array of stages is valid
-pub fn debug_executor<I: Debug + std::cmp::PartialEq + std::hash::Hash + Clone + Eq>(
+pub fn default_executor<I: Debug + std::cmp::PartialEq + std::hash::Hash + Clone + Eq>(
     stages: Vec<OperationStage<I>>,
     register_count: usize,
+    load: &dyn Fn(LocatedOperation<I>),
+    unload: &dyn Fn(LocatedOperation<I>),
+    perform_operation: &dyn Fn(LocatedOperation<I>, Vec<LocatedOperation<I>>),
 ) -> Result<(), ExecutorError> {
     let mut memory: Vec<(Option<I>, bool)> = Vec::with_capacity(register_count);
 
@@ -96,28 +105,29 @@ pub fn debug_executor<I: Debug + std::cmp::PartialEq + std::hash::Hash + Clone +
 
     for stage in stages.iter() {
         // Allocate Space
-        for (op, addr) in stage.allocate_before.iter() {
+        for alloc_op in stage.allocate_before.iter() {
             {
                 let existing = memory
-                    .get(*addr)
+                    .get(alloc_op.addr)
                     .ok_or(ExecutorError::MemoryHitResourceLimit)?;
                 if existing != &(None, false) {
                     return Err(ExecutorError::MemoryOverwrite);
                 };
-                if memory_map.contains_key(op) {
+                if memory_map.contains_key(&alloc_op.id) {
                     return Err(ExecutorError::OperationReallocated);
                 }
             }
             *memory
-                .get_mut(*addr)
-                .ok_or(ExecutorError::MemoryHitResourceLimit)? = (Some(op.clone()), false);
-            memory_map.insert(op.clone(), *addr);
+                .get_mut(alloc_op.addr)
+                .ok_or(ExecutorError::MemoryHitResourceLimit)? = (Some(alloc_op.id.clone()), false);
+            memory_map.insert(alloc_op.id.clone(), alloc_op.addr);
+            load(alloc_op.clone());
         }
 
         println!("    {}", fmt_memory(&memory));
 
         let (current_operation, current_operation_addr) = &stage.operation;
-
+        let mut dep_array: Vec<LocatedOperation<I>> = Vec::new();
         // Perform Operation
         {
             // Ensure dependencies for current operation exist
@@ -134,6 +144,10 @@ pub fn debug_executor<I: Debug + std::cmp::PartialEq + std::hash::Hash + Clone +
                 if !dep_already_executed {
                     return Err(ExecutorError::DependencyNotExecuted);
                 }
+                dep_array.push(LocatedOperation {
+                    id: dep.clone(), 
+                    addr: *dep_addr
+                });
             }
 
             // Validation
@@ -161,36 +175,49 @@ pub fn debug_executor<I: Debug + std::cmp::PartialEq + std::hash::Hash + Clone +
             .ok_or(ExecutorError::MemoryHitResourceLimit)?
             .1 = true;
         println!("{:?} {}", current_operation.id, fmt_memory(&memory));
+        perform_operation(
+            LocatedOperation {
+                id: current_operation.id.clone(), 
+                addr: *current_operation_addr}, dep_array);
 
         // Remove Old
-        for (del_op, del_op_addr) in stage.delete_after.iter() {
+        for del_op in stage.delete_after.iter() {
             {
-                if !memory_map.contains_key(&del_op) {
+                if !memory_map.contains_key(&del_op.id) {
                     return Err(ExecutorError::MemoryFreeingUnallocated);
                 }
                 let (del_cur_allocated, del_already_executed) = &memory
-                    .get(*del_op_addr)
+                    .get(del_op.addr)
                     .ok_or(ExecutorError::MemoryHitResourceLimit)?;
 
                 if del_cur_allocated == &None {
                     return Err(ExecutorError::MemoryFreeingEmpty);
                 }
-                if del_cur_allocated.as_ref() != Some(del_op) {
+                if del_cur_allocated.as_ref() != Some(&del_op.id) {
                     return Err(ExecutorError::MemoryMapError);
                 }
                 if !del_already_executed {
                     return Err(ExecutorError::MemoryFreeingUnexecuted);
                 }
             }
-
             *memory
-                .get_mut(*del_op_addr)
-                .ok_or(ExecutorError::MemoryHitResourceLimit)? = (None, false)
+                .get_mut(del_op.addr)
+                .ok_or(ExecutorError::MemoryHitResourceLimit)? = (None, false);
+                unload(del_op.clone());
+
         }
 
         println!("    {}", fmt_memory(&memory));
     }
     Ok(())
+}
+
+#[cfg(test)]
+fn to_op<I: Clone + Debug>(op: I, addr: usize) -> LocatedOperation<I> {
+    LocatedOperation {
+        id: op,
+        addr: addr,
+    }
 }
 
 #[test]
@@ -202,11 +229,11 @@ fn test_executor_memory_overwrite_detect() {
 
     let stages = vec![OperationStage {
         operation: (a, 0),
-        allocate_before: vec![('A', 0), ('B', 0)],
+        allocate_before: vec![to_op('A', 0), to_op('B', 0)],
         delete_after: vec![],
     }];
     assert_eq!(
-        debug_executor(stages, 10),
+        default_executor(stages, 10, &|_| {}, &|_| {}, &|_, _| {}),
         Err(ExecutorError::MemoryOverwrite)
     );
 }
@@ -219,11 +246,11 @@ fn test_executor_reallocate_detect() {
     };
     let stages = vec![OperationStage {
         operation: (a, 0),
-        allocate_before: vec![('A', 0), ('A', 1)],
+        allocate_before: vec![to_op('A', 0), to_op('A', 1)],
         delete_after: vec![],
     }];
     assert_eq!(
-        debug_executor(stages, 10),
+        default_executor(stages, 10, &|_| {}, &|_| {}, &|_, _| {}),
         Err(ExecutorError::OperationReallocated)
     );
 }
@@ -236,11 +263,11 @@ fn test_executor_dependency_unallocated_detect() {
     };
     let stages = vec![OperationStage {
         operation: (a, 0),
-        allocate_before: vec![('A', 0)],
+        allocate_before: vec![to_op('A', 0)],
         delete_after: vec![],
     }];
     assert_eq!(
-        debug_executor(stages, 10),
+        default_executor(stages, 10, &|_| {}, &|_| {}, &|_, _| {}),
         Err(ExecutorError::DependencyNotAllocated)
     );
 }
@@ -253,11 +280,11 @@ fn test_executor_dependency_not_executed_detect() {
     };
     let stages = vec![OperationStage {
         operation: (a, 0),
-        allocate_before: vec![('A', 0), ('B', 1)],
+        allocate_before: vec![to_op('A', 0), to_op('B', 1)],
         delete_after: vec![],
     }];
     assert_eq!(
-        debug_executor(stages, 10),
+        default_executor(stages, 10, &|_| {}, &|_| {}, &|_, _| {}),
         Err(ExecutorError::DependencyNotExecuted)
     );
 }
@@ -274,7 +301,7 @@ fn test_executor_opertion_not_allocated_detect() {
         delete_after: vec![],
     }];
     assert_eq!(
-        debug_executor(stages, 10),
+        default_executor(stages, 10, &|_| {}, &|_| {}, &|_, _| {}),
         Err(ExecutorError::OperationNotAllocated)
     );
 }
@@ -288,7 +315,7 @@ fn test_executor_opertion_run_twice_detect() {
     let stages = vec![
         OperationStage {
             operation: (a.clone(), 0),
-            allocate_before: vec![('A', 0)],
+            allocate_before: vec![to_op('A', 0)],
             delete_after: vec![],
         },
         OperationStage {
@@ -298,7 +325,7 @@ fn test_executor_opertion_run_twice_detect() {
         },
     ];
     assert_eq!(
-        debug_executor(stages, 10),
+        default_executor(stages, 10, &|_| {}, &|_| {}, &|_, _| {}),
         Err(ExecutorError::OperationRunTwice)
     );
 }
@@ -311,11 +338,11 @@ fn test_executor_freeing_empty_detect() {
     };
     let stages = vec![OperationStage {
         operation: (a.clone(), 0),
-        allocate_before: vec![('A', 0)],
-        delete_after: vec![('A', 1)],
+        allocate_before: vec![to_op('A', 0)],
+        delete_after: vec![to_op('A', 1)],
     }];
     assert_eq!(
-        debug_executor(stages, 10),
+        default_executor(stages, 10, &|_| {}, &|_| {}, &|_, _| {}),
         Err(ExecutorError::MemoryFreeingEmpty)
     );
 }
@@ -328,11 +355,11 @@ fn test_executor_freeing_unallocated_detect() {
     };
     let stages = vec![OperationStage {
         operation: (a.clone(), 0),
-        allocate_before: vec![('A', 0)],
-        delete_after: vec![('B', 0)],
+        allocate_before: vec![to_op('A', 0)],
+        delete_after: vec![to_op('B', 0)],
     }];
     assert_eq!(
-        debug_executor(stages, 10),
+        default_executor(stages, 10, &|_| {}, &|_| {}, &|_, _| {}),
         Err(ExecutorError::MemoryFreeingUnallocated)
     );
 }
@@ -345,11 +372,11 @@ fn test_executor_freeing_unexecuted_detect() {
     };
     let stages = vec![OperationStage {
         operation: (a.clone(), 0),
-        allocate_before: vec![('A', 0), ('B', 1)],
-        delete_after: vec![('B', 1)],
+        allocate_before: vec![to_op('A', 0), to_op('B', 1)],
+        delete_after: vec![to_op('B', 1)],
     }];
     assert_eq!(
-        debug_executor(stages, 10),
+        default_executor(stages, 10, &|_| {}, &|_| {}, &|_, _| {}),
         Err(ExecutorError::MemoryFreeingUnexecuted)
     );
 }
@@ -362,11 +389,11 @@ fn test_executor_mem_map_error1_detect() {
     };
     let stages = vec![OperationStage {
         operation: (a.clone(), 0),
-        allocate_before: vec![('A', 1)],
+        allocate_before: vec![to_op('A', 1)],
         delete_after: vec![],
     }];
     assert_eq!(
-        debug_executor(stages, 10),
+        default_executor(stages, 10, &|_| {}, &|_| {}, &|_, _| {}),
         Err(ExecutorError::MemoryMapError)
     );
 }
@@ -379,11 +406,11 @@ fn test_executor_mem_map_error2_detect() {
     };
     let stages = vec![OperationStage {
         operation: (a.clone(), 0),
-        allocate_before: vec![('A', 0), ('B', 1)],
-        delete_after: vec![('B', 0)],
+        allocate_before: vec![to_op('A', 0), to_op('B', 1)],
+        delete_after: vec![to_op('B', 0)],
     }];
     assert_eq!(
-        debug_executor(stages, 10),
+        default_executor(stages, 10, &|_| {}, &|_| {}, &|_, _| {}),
         Err(ExecutorError::MemoryMapError)
     );
 }
@@ -396,11 +423,11 @@ fn test_executor_memory_limit_allocate_detect() {
     };
     let stages = vec![OperationStage {
         operation: (a.clone(), 0),
-        allocate_before: vec![('A', 0), ('B', 20)],
+        allocate_before: vec![to_op('A', 0), to_op('B', 20)],
         delete_after: vec![],
     }];
     assert_eq!(
-        debug_executor(stages, 10),
+        default_executor(stages, 10, &|_| {}, &|_| {}, &|_, _| {}),
         Err(ExecutorError::MemoryHitResourceLimit)
     );
 }
@@ -413,11 +440,11 @@ fn test_executor_memory_limit_operate_detect() {
     };
     let stages = vec![OperationStage {
         operation: (a.clone(), 20),
-        allocate_before: vec![('A', 0)],
+        allocate_before: vec![to_op('A', 0)],
         delete_after: vec![],
     }];
     assert_eq!(
-        debug_executor(stages, 10),
+        default_executor(stages, 10, &|_| {}, &|_| {}, &|_, _| {}),
         Err(ExecutorError::MemoryHitResourceLimit)
     );
 }
@@ -430,11 +457,11 @@ fn test_executor_memory_limit_delete_detect() {
     };
     let stages = vec![OperationStage {
         operation: (a.clone(), 0),
-        allocate_before: vec![('A', 0)],
-        delete_after: vec![('A', 20)],
+        allocate_before: vec![to_op('A', 0)],
+        delete_after: vec![to_op('A', 20)],
     }];
     assert_eq!(
-        debug_executor(stages, 10),
+        default_executor(stages, 10, &|_| {}, &|_| {}, &|_, _| {}),
         Err(ExecutorError::MemoryHitResourceLimit)
     );
 }

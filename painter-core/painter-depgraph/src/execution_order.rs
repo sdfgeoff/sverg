@@ -1,7 +1,7 @@
 use super::depgraph::DepGraph;
 use std::collections::HashSet;
 
-use super::{Operation, OperationStage};
+use super::{Operation, OperationStage, LocatedOperation};
 use std::iter::FromIterator;
 
 #[derive(Debug, PartialEq)]
@@ -35,11 +35,14 @@ pub fn compute_execution<I: std::fmt::Debug + std::hash::Hash + Eq + Clone>(
     let mut stages = Vec::new();
 
     let mut prev_memory_state: Vec<Option<I>> = vec![None; memory_size];
-    let mut del_after: Vec<(I, usize)> = Vec::new();
+    let mut del_after: Vec<LocatedOperation<I>> = Vec::new();
 
     for (addr, output_node) in output_nodes.iter().enumerate() {
         prev_memory_state[addr] = Some(output_node.clone());
-        del_after.push((output_node.clone(), addr));
+        del_after.push(LocatedOperation {
+            id: output_node.clone(), 
+            addr
+        });
     }
 
     let tmp_first_stage = OperationStage {
@@ -67,7 +70,7 @@ pub fn compute_execution<I: std::fmt::Debug + std::hash::Hash + Eq + Clone>(
         let prev_alloc_before_ids: Vec<I> = prev_stage
             .allocate_before
             .iter()
-            .map(|op| op.0.clone())
+            .map(|op| op.id.clone())
             .collect();
         let mut new_memory_state: Vec<Option<I>> = prev_memory_state
             .iter()
@@ -112,7 +115,6 @@ pub fn compute_execution<I: std::fmt::Debug + std::hash::Hash + Eq + Clone>(
             if candidate_ops.len() != 0 {
                 return Err(OrderCalculationError::UnexecutedOperations)
             }
-            println!("Here");
             did_break_from_loop = true;
             break;
         }
@@ -130,8 +132,8 @@ pub fn compute_execution<I: std::fmt::Debug + std::hash::Hash + Eq + Clone>(
             .clone();
 
         remaining_ops.remove(&operation);
-        let mut allocate_before: Vec<(I, usize)> = Vec::new();
-        let mut delete_after: Vec<(I, usize)> = Vec::new();
+        let mut allocate_before: Vec<LocatedOperation<I>> = Vec::new();
+        let mut delete_after: Vec<LocatedOperation<I>> = Vec::new();
 
         for dep in operation_depends.iter() {
             if !graph.contains(dep) {
@@ -145,11 +147,17 @@ pub fn compute_execution<I: std::fmt::Debug + std::hash::Hash + Eq + Clone>(
                     .position(|x| x == &None)
                     .ok_or(OrderCalculationError::ResourceLimitExceeded)?; // # ValueError = Out of memory
                 new_memory_state[available_slot] = some_dep; // Cannot fail as the slot id s determined above
-                delete_after.push((dep.clone(), available_slot));
+                delete_after.push(LocatedOperation{
+                    id: dep.clone(), 
+                    addr: available_slot
+                });
             }
         }
 
-        allocate_before.push((operation.clone(), operation_addr));
+        allocate_before.push(LocatedOperation{
+            id: operation.clone(), 
+            addr: operation_addr
+        });
 
         let stage = OperationStage {
             operation: (
@@ -182,7 +190,7 @@ pub fn compute_execution<I: std::fmt::Debug + std::hash::Hash + Eq + Clone>(
 
 
 #[cfg(test)]
-fn position<I: Clone + Eq>(order: &Vec<OperationStage<I>>, operation: I) -> usize {
+fn position<I: Clone + Eq + std::fmt::Debug>(order: &Vec<OperationStage<I>>, operation: I) -> usize {
     return order.iter().position(|x| x.operation.0.id == operation).expect("Operation not in execution stages!");
 }
 

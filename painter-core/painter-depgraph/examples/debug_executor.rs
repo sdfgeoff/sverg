@@ -1,4 +1,12 @@
-use painter_depgraph::{debug_executor, Operation, OperationStage};
+use painter_depgraph::{default_executor, Operation, OperationStage, LocatedOperation};
+
+fn to_op<I: Clone + std::fmt::Debug>(op: I, addr: usize) -> LocatedOperation<I> {
+    LocatedOperation {
+        id: op,
+        addr: addr,
+    }
+}
+
 
 fn main() {
     let a = Operation {
@@ -33,40 +41,45 @@ fn main() {
     let stages = vec![
         OperationStage {
             operation: (e, 0),
-            allocate_before: vec![('E', 0)],
+            allocate_before: vec![to_op('E', 0)],
             delete_after: vec![],
         },
         OperationStage {
             operation: (f, 3),
-            allocate_before: vec![('F', 3)],
+            allocate_before: vec![to_op('F', 3)],
             delete_after: vec![],
         },
         OperationStage {
             operation: (g, 2),
-            allocate_before: vec![('G', 2)],
+            allocate_before: vec![to_op('G', 2)],
             delete_after: vec![],
         },
         OperationStage {
             operation: (d, 1),
-            allocate_before: vec![('D', 1)],
-            delete_after: vec![('E', 0)],
+            allocate_before: vec![to_op('D', 1)],
+            delete_after: vec![to_op('E', 0)],
         },
         OperationStage {
             operation: (c, 0),
-            allocate_before: vec![('C', 0)],
-            delete_after: vec![('D', 1), ('F', 3)],
+            allocate_before: vec![to_op('C', 0)],
+            delete_after: vec![to_op('D', 1), to_op('F', 3)],
         },
         OperationStage {
             operation: (b, 1),
-            allocate_before: vec![('B', 1)],
-            delete_after: vec![('C', 0)],
+            allocate_before: vec![to_op('B', 1)],
+            delete_after: vec![to_op('C', 0)],
         },
         OperationStage {
             operation: (a, 0),
-            allocate_before: vec![('A', 0)],
-            delete_after: vec![('B', 1), ('G', 2)],
+            allocate_before: vec![to_op('A', 0)],
+            delete_after: vec![to_op('B', 1), to_op('G', 2)],
         },
     ];
 
-    debug_executor(stages, 10).expect("Arrgh!");
+    default_executor(
+        stages, 10, 
+        &|op| {println!("Loading {:?} into {:?}", op.id, op.addr)},
+        &|op| {println!("Deleting {:?} from {:?}", op.id, op.addr)}, 
+        &|op, deps| {println!("Executing {:?} ({:?}) deps: {:?}", op.id, op.addr, deps)}
+    ).expect("Arrgh!");
 }

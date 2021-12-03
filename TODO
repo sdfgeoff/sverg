@@ -3,22 +3,32 @@
  - [X] Sort out brush transparency blending
  - [X] Check operation insertion order (why do strokes render underneath)
  - [x] Export depsgraph as dotfile for analysis
+ - [x] Rename "child" in depsgraph to "depends_on" 
+ - [x] Sort out render order for layers
+ - [ ] Dynamically allocate textures on GPU based on depgraph allocation
+ - [ ] Sort out render caching.
+ 
+At this point evaluate feasibility. Do some daily spitpaints. Figure out how
+many brush strokes a piece of digital art has etc. etc. 
 
+ - [ ] Unify brush glyphs into depgraph to avoid invalidation issues
  - [ ] Separate brushes from glyps (brushes are painter-concepts, glyphs are sverg concepts)
+ 
  - [ ] Decide on architecture for python side
     - [X] Create color picker for brush
-    - [ ] Create size slider for brush
+    - [x] Create size slider for brush
     - [ ] Create brush editor
+    - [ ] Create layer select widget
  - [ ] Add brush rotation as an option 
  
  - [ ] Redo file format as non-binary-dump
  - [ ] Rename to sverg
+ 
+ 
+ - [ ] Implement layer blend operation
+ - [ ] Implement simple fill operation
+ - [ ] Implement gradient fill operation.
 
- - [ ] Rename "child" in depsgraph to "depends_on" 
- - [ ] Create layer select widget
- - [ ] Create layer blend operation
- - [ ] Sort out render order for layers
- - [ ] Sort out render caching.
  
  
  

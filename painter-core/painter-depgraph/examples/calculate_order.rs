@@ -1,4 +1,4 @@
-use painter_depgraph::{compute_execution, debug_executor, DepGraph};
+use painter_depgraph::{compute_execution, default_executor, DepGraph};
 
 fn main() {
     let mut graph = DepGraph::default();
@@ -26,5 +26,9 @@ fn main() {
     let stages = compute_execution(&graph, vec!['A'], 10).expect("Calculating Order Failed");
     let stages_str: Vec<String> = stages.iter().map(|s| format!("{:?}", s)).collect();
     println!("{}", stages_str.join("\n"));
-    debug_executor(stages, 10).expect("Execution Failed");
+    default_executor(stages, 10,
+        &|op| {println!("Loading {:?} into {:?}", op.id, op.addr)},
+        &|op| {println!("Deleting {:?} from {:?}", op.id, op.addr)}, 
+        &|op, deps| {println!("Executing {:?} ({:?}) deps: {:?}", op.id, op.addr, deps)}
+    ).expect("Execution Failed");
 }
