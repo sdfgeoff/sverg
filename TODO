@@ -5,8 +5,8 @@
  - [x] Export depsgraph as dotfile for analysis
  - [x] Rename "child" in depsgraph to "depends_on" 
  - [x] Sort out render order for layers
- - [ ] Dynamically allocate textures on GPU based on depgraph allocation
- - [ ] Sort out render caching.
+ - [x] Dynamically allocate textures on GPU based on depgraph allocation
+ - [ ] Sort out render caching between frames.
  
 At this point evaluate feasibility. Do some daily spitpaints. Figure out how
 many brush strokes a piece of digital art has etc. etc. 
