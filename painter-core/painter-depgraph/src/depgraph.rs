@@ -1,8 +1,8 @@
+use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
-use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct DepGraph<I: Hash + Eq + Debug + Clone> {
@@ -74,11 +74,9 @@ impl<I: Hash + Eq + Debug + Clone> DepGraph<I> {
         self.nodes.contains_key(node)
     }
 
-
     pub fn iter_nodes(&self) -> std::collections::hash_map::Keys<I, Vec<I>> {
         self.nodes.keys()
     }
-
 
     /// Inserts a new operation into the tree "on top" of where the old one was.
     /// Eg:
@@ -114,10 +112,15 @@ impl<I: Hash + Eq + Debug + Clone> DepGraph<I> {
     ///                          C
     /// ```
     pub fn operate_on(&mut self, new_operation: I, base: I) {
-        let dependees:Vec<I> = self.dependees(&base).iter().map(|x| (*x).clone()).collect();
-        let dependants: Vec<I> = self.depends_on(&base).expect("Base not in depsgraph").to_vec();
+        let dependees: Vec<I> = self.dependees(&base).iter().map(|x| (*x).clone()).collect();
+        let dependants: Vec<I> = self
+            .depends_on(&base)
+            .expect("Base not in depsgraph")
+            .to_vec();
         assert!(
-            self.nodes.insert(new_operation.clone(), dependants).is_none(),
+            self.nodes
+                .insert(new_operation.clone(), dependants)
+                .is_none(),
             "operate_on assumes completely new entry"
         );
         self.nodes.insert(new_operation.clone(), vec![base.clone()]);
@@ -166,8 +169,6 @@ fn test_dotfile() {
     println!("{}", d.generate_dotgraph(&|x| format!("{:?}", x)))
 }
 
-
-
 #[test]
 fn test_operate_on_simple() {
     let mut d = DepGraph::default();
@@ -194,7 +195,6 @@ fn test_operate_on_simple() {
 
 #[test]
 fn test_operate_on_with_multi_deps() {
-
     let mut graph = DepGraph::default();
 
     let a = "A";

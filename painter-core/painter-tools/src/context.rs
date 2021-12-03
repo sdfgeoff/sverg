@@ -70,7 +70,11 @@ impl EditContext {
             .layers
             .get_unchecked(&layer_id)
             .blend_operation_id;
-        let layer_existing_tips = self.image.depgraph.depends_on(&layer_blend_op_id).expect("Unable to find blend op in depsgraph");
+        let layer_existing_tips = self
+            .image
+            .depgraph
+            .depends_on(&layer_blend_op_id)
+            .expect("Unable to find blend op in depsgraph");
         if layer_existing_tips.len() != 2 {
             warn!("Malformed layer blend operation: incorrect number of dependencies");
             self.insert_operation_onto = None;
@@ -107,35 +111,20 @@ impl EditContext {
     /// This is useful for debugging
     pub fn generate_dotgraph(&self) -> String {
         use painter_data::id_map::IncrId;
-        self.image.depgraph.generate_dotgraph(&|operation_id| { 
+        self.image.depgraph.generate_dotgraph(&|operation_id| {
             let operation = self.image.operations.get_unchecked(operation_id);
             match operation {
                 Operation::Composite(_dat) => {
-                    return format!(
-                        "Operation {} {:?}",
-                        operation_id.val(),
-                        operation
-                    );
+                    return format!("Operation {} {:?}", operation_id.val(), operation);
                 }
                 Operation::Tag(str) => {
-                    return format!(
-                        "Operation {} Tag({})",
-                        operation_id.val(),
-                        str
-                    );
+                    return format!("Operation {} Tag({})", operation_id.val(), str);
                 }
                 Operation::Output(_id) => {
-                    return format!(
-                        "Operation {} {:?}",
-                        operation_id.val(),
-                        operation
-                    );
+                    return format!("Operation {} {:?}", operation_id.val(), operation);
                 }
                 Operation::Stroke(_dat) => {
-                    return format!(
-                        "Operation {} Stroke",
-                        operation_id.val()
-                    );
+                    return format!("Operation {} Stroke", operation_id.val());
                 }
             }
         })

@@ -11,7 +11,8 @@ use painter_tools::context::EditContext;
 
 use painter_data::id_map::{OperationId, OperationIdMap};
 use painter_data::operation::Operation;
-use painter_depgraph::compute_execution;
+use painter_depgraph::{compute_execution, default_executor, LocatedOperation};
+use std::cell::RefCell;
 
 mod brush_renderer;
 mod canvas;
@@ -24,13 +25,16 @@ mod shader;
 use brush_renderer::BrushRenderer;
 use output_renderer::OutputRenderer;
 
+const NUM_TEXTURES: usize = 10;
+
 #[pyclass]
 pub struct PainterRenderer {
     gl: glow::Context,
     brush_renderer: BrushRenderer,
     output_renderer: OutputRenderer,
+    output_framebuffer: Option<framebuffer_state::FrameBufferState>,
 
-    tmp_canvas: Option<canvas::Canvas>,
+    gpu_texture_cache: RefCell<std::collections::HashMap<usize, canvas::Canvas>>,
 }
 
 /// Returns the first zero-index output node in an OperationIdMap
@@ -79,70 +83,163 @@ impl PainterRenderer {
         Ok(Self {
             gl,
             brush_renderer,
-            tmp_canvas: None,
+            gpu_texture_cache: RefCell::new(std::collections::HashMap::new()),
             output_renderer,
+            output_framebuffer: None,
         })
     }
 
     fn render(&mut self, context: &EditContext) {
         // let col = &context.image.metadata.canvas_background_color;
-        let graph = &context.image.depgraph;
 
-        let outp_framebuffer_state =
-            framebuffer_state::FrameBufferState::from_current_gl_state(&self.gl);
+        self.output_framebuffer =
+            Some(framebuffer_state::FrameBufferState::from_current_gl_state(&self.gl));
 
-        if let Some(canv) = self.tmp_canvas.as_mut() {
-            canv.resize(&self.gl, context.image.metadata.preview_canvas_size);
-            canv.make_active(&self.gl);
-            unsafe {
-                self.gl.clear_color(
-                    context.image.metadata.canvas_background_color.r,
-                    context.image.metadata.canvas_background_color.g,
-                    context.image.metadata.canvas_background_color.b,
-                    context.image.metadata.canvas_background_color.a,
-                );
-                self.gl.clear(glow::COLOR_BUFFER_BIT);
-            }
-        } else {
-            self.tmp_canvas = Some(
-                canvas::Canvas::new(
-                    &self.gl,
-                    context.image.metadata.preview_canvas_size,
-                    "tmp_canvas",
-                )
-                .expect("Failed to create output canvas"),
-            );
-        }
+        // if let Some(canv) = self.tmp_canvas.as_mut() {
+        //     canv.resize(&self.gl, context.image.metadata.preview_canvas_size);
+        //     canv.make_active(&self.gl);
+        //     unsafe {
+        //         self.gl.clear_color(
+        //             context.image.metadata.canvas_background_color.r,
+        //             context.image.metadata.canvas_background_color.g,
+        //             context.image.metadata.canvas_background_color.b,
+        //             context.image.metadata.canvas_background_color.a,
+        //         );
+        //         self.gl.clear(glow::COLOR_BUFFER_BIT);
+        //     }
+        // } else {
+        //     self.tmp_canvas = Some(
+        //         canvas::Canvas::new(
+        //             &self.gl,
+        //             context.image.metadata.preview_canvas_size,
+        //             "tmp_canvas",
+        //         )
+        //         .expect("Failed to create output canvas"),
+        //     );
+        // }
 
         let output_node = get_output_node(&context.image.operations).expect("No Output Node");
-        let order_of_operations = compute_execution(&context.image.depgraph, vec![output_node], 10).expect("Computing order of operation failed"); //graph.get_children_recursive_breadth_first(output_node);
-        // From here we coud in theory remove any operations that haven't changed since last time and are in cache.
-        // but for now that isn't implemented.
-        for operation_stage in order_of_operations.iter() {
-            match context.image.operations.get_unchecked(&operation_stage.operation.0.id) {
-                Operation::Stroke(stroke_data) => {
-                    if let Some(glyph) = context.image.glyphs.get(&stroke_data.glyph) {
-                        self.brush_renderer.perform_stroke(
-                            &self.gl,
-                            stroke_data,
-                            &glyph,
-                            &self.tmp_canvas.as_ref().unwrap(),
-                        );
-                    } else {
-                        warn!("Unable to find brush for stroke");
-                    }
-                }
-                Operation::Output(_id) => {
-                    let tmp_canvas = self.tmp_canvas.as_ref().unwrap();
-                    self.output_renderer.render(
+        let order_of_operations =
+            compute_execution(&context.image.depgraph, vec![output_node], NUM_TEXTURES)
+                .expect("Computing order of operation failed");
+
+        default_executor(
+            order_of_operations,
+            NUM_TEXTURES,
+            &mut |x| self.load_resource(context, x),
+            &mut |x| self.unload_resource(context, x),
+            &mut |x, dep| self.execute_op(context, x, dep),
+        ).expect("Execution Failed");
+
+        self.output_framebuffer = None;
+        // // From here we coud in theory remove any operations that haven't changed since last time and are in cache.
+        // // but for now that isn't implemented.
+        // for operation_stage in order_of_operations.iter() {
+        //     match context.image.operations.get_unchecked(&operation_stage.operation.0.id) {
+        //         Operation::Stroke(stroke_data) => {
+        //             if let Some(glyph) = context.image.glyphs.get(&stroke_data.glyph) {
+        //                 self.brush_renderer.perform_stroke(
+        //                     &self.gl,
+        //                     stroke_data,
+        //                     &glyph,
+        //                     &self.tmp_canvas.as_ref().unwrap(),
+        //                 );
+        //             } else {
+        //                 warn!("Unable to find brush for stroke");
+        //             }
+        //         }
+        //         Operation::Output(_id) => {
+        //             let tmp_canvas = self.tmp_canvas.as_ref().unwrap();
+        //             self.output_renderer.render(
+        //                 &self.gl,
+        //                 context,
+        //                 &tmp_canvas.texture,
+        //                 &outp_framebuffer_state,
+        //             );
+        //         }
+        //         Operation::Tag(_name) => {}
+        //         Operation::Composite(_name) => {}
+        //     }
+        // }
+    }
+}
+
+impl PainterRenderer {
+    fn load_resource(&self, context: &EditContext, op: LocatedOperation<OperationId>) {
+        let mut texture_cache = self.gpu_texture_cache.try_borrow_mut().expect("Borrow Tex Cache Failed");
+
+        if !texture_cache.contains_key(&op.addr) {
+            // If the canvas doesn't exist, create it
+            texture_cache.insert(op.addr, canvas::Canvas::new(
+                &self.gl,
+                context.image.metadata.preview_canvas_size,
+                "tmp_canvas",
+            ).expect("Creating Canvas Failed"));
+        }
+
+        // Make sure canvas is ready to be drawn on
+        let canv = texture_cache.get_mut(&op.addr).expect("Still does not exist in cache");
+        canv.resize(&self.gl, context.image.metadata.preview_canvas_size);
+        canv.make_active(&self.gl);
+        unsafe {
+            self.gl.clear_color(
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            );
+            self.gl.clear(glow::COLOR_BUFFER_BIT);
+        }
+    }
+
+    fn unload_resource(&self, _context: &EditContext, _op: LocatedOperation<OperationId>) {
+        // We can just let textures hang around in the cache. They will be reused next frame
+        // let texture_cache = self.gpu_texture_cache.borrow_mut();
+    }
+
+    fn execute_op(
+        &self,
+        context: &EditContext, 
+        op: LocatedOperation<OperationId>,
+        deps: Vec<LocatedOperation<OperationId>>,
+    ) {
+        let texture_cache = self.gpu_texture_cache.borrow();
+
+        let output_canvas = texture_cache.get(&op.addr).expect("Texture not loaded in cache");
+
+
+        match context.image.operations.get_unchecked(&op.id) {
+            Operation::Stroke(stroke_data) => {
+                let canvas_to_draw_on = texture_cache.get(&deps[0].addr).expect("Output does not depend on anythin!");
+
+                output_canvas.copy_from(&self.gl, canvas_to_draw_on);
+
+                if let Some(glyph) = context.image.glyphs.get(&stroke_data.glyph) {
+                    self.brush_renderer.perform_stroke(
                         &self.gl,
-                        context,
-                        &tmp_canvas.texture,
-                        &outp_framebuffer_state,
+                        stroke_data,
+                        &glyph,
+                        &output_canvas,
                     );
+                } else {
+                    warn!("Unable to find brush for stroke");
                 }
-                Operation::Tag(_name) => {}
-                Operation::Composite(_name) => {}
+            }
+            Operation::Output(_id) => {
+                let canvas_to_draw = texture_cache.get(&deps[0].addr).expect("Output does not depend on anythin!");
+                self.output_renderer.render(
+                    &self.gl,
+                    context,
+                    &canvas_to_draw.texture,
+                    self.output_framebuffer.as_ref().expect("No output framebuffer"),
+                );
+            }
+            Operation::Tag(_name) => {}
+            Operation::Composite(_name) => {
+                // For now all composites are a passthrough
+                let canvas_underneath = texture_cache.get(&deps[0].addr).expect("Output does not depend on anythin!");
+                let _canvas_above = texture_cache.get(&deps[1].addr).expect("Output does not depend on anythin!");
+                output_canvas.copy_from(&self.gl, canvas_underneath);
             }
         }
     }

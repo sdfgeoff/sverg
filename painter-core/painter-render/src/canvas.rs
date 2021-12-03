@@ -118,6 +118,23 @@ impl Canvas {
             gl.viewport(0, 0, self.resolution[0] as i32, self.resolution[1] as i32);
         }
     }
+
+    /// Copies all the texture data from `other` into `self`
+    pub fn copy_from(&self, gl: &glow::Context, other: &Self) {
+        unsafe {
+            other.make_active(gl);
+
+            gl.bind_texture(glow::TEXTURE_2D, Some(self.texture));
+            gl.copy_tex_sub_image_2d(
+                glow::TEXTURE_2D, 
+                0, 
+                0, 0, // Offset
+                0, 0, // Offset #s....
+                self.resolution[0].try_into().unwrap(), 
+                self.resolution[1].try_into().unwrap()
+            );
+        }
+    }
 }
 
 /// Create the texture and set it up

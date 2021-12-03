@@ -15,7 +15,7 @@ use png::{BitDepth, ColorType};
 use super::canvas::Canvas;
 
 pub struct BrushRenderer {
-    brush_texture_store: HashMap<Glyph, glow::Texture>,
+    brush_texture_store: std::cell::RefCell<HashMap<Glyph, glow::Texture>>,
 
     vertex_array_obj: glow::NativeVertexArray,
     brush_shader: shader::SimpleShader,
@@ -90,7 +90,7 @@ impl BrushRenderer {
 
             gl.bind_vertex_array(None);
             Self {
-                brush_texture_store: HashMap::new(),
+                brush_texture_store: std::cell::RefCell::new(HashMap::new()),
 
                 vertex_array_obj,
                 vertex_position_buffer,
@@ -107,8 +107,9 @@ impl BrushRenderer {
     }
 
     /// Ensures a brushes texture is loaded onto the GPU and returns a reference to it
-    pub fn load_glyph_texture(&mut self, gl: &glow::Context, glyph: &Glyph) -> glow::Texture {
-        if let Some(tex) = self.brush_texture_store.get(&glyph) {
+    pub fn load_glyph_texture(&self, gl: &glow::Context, glyph: &Glyph) -> glow::Texture {
+        let mut tex_store = self.brush_texture_store.borrow_mut();
+        if let Some(tex) = tex_store.get(&glyph) {
             tex.clone()
         } else {
             info!("loading_brush_texture_to_gpu");
@@ -126,13 +127,13 @@ impl BrushRenderer {
                 gl.pop_debug_group();
             }
 
-            self.brush_texture_store.insert(glyph.clone(), new_tex);
-            self.brush_texture_store.get(&glyph).unwrap().clone()
+            tex_store.insert(glyph.clone(), new_tex);
+            tex_store.get(&glyph).unwrap().clone()
         }
     }
 
     pub fn perform_stroke(
-        &mut self,
+        &self,
         gl: &glow::Context,
         stroke: &StrokeData,
         glyph: &Glyph,

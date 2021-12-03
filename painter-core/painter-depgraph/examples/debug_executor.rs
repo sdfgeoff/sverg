@@ -1,12 +1,8 @@
-use painter_depgraph::{default_executor, Operation, OperationStage, LocatedOperation};
+use painter_depgraph::{default_executor, LocatedOperation, Operation, OperationStage};
 
 fn to_op<I: Clone + std::fmt::Debug>(op: I, addr: usize) -> LocatedOperation<I> {
-    LocatedOperation {
-        id: op,
-        addr: addr,
-    }
+    LocatedOperation { id: op, addr: addr }
 }
-
 
 fn main() {
     let a = Operation {
@@ -77,9 +73,11 @@ fn main() {
     ];
 
     default_executor(
-        stages, 10, 
-        &|op| {println!("Loading {:?} into {:?}", op.id, op.addr)},
-        &|op| {println!("Deleting {:?} from {:?}", op.id, op.addr)}, 
-        &|op, deps| {println!("Executing {:?} ({:?}) deps: {:?}", op.id, op.addr, deps)}
-    ).expect("Arrgh!");
+        stages,
+        10,
+        &mut |op| println!("Loading {:?} into {:?}", op.id, op.addr),
+        &mut |op| println!("Deleting {:?} from {:?}", op.id, op.addr),
+        &mut |op, deps| println!("Executing {:?} ({:?}) deps: {:?}", op.id, op.addr, deps),
+    )
+    .expect("Arrgh!");
 }

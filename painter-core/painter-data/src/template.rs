@@ -1,11 +1,11 @@
 use crate::brush::{Brush, Glyph, PressureSettings};
 use crate::color_primitives::{BlendMode, Color};
 // use crate::depgraph::DepGraph;
-use painter_depgraph::DepGraph;
 use crate::id_map::{BrushIdMap, GlyphIdMap, IdMapBase, LayerIdMap, OperationIdMap};
 use crate::image::{Image, MetaData};
 use crate::layer::Layer;
 use crate::operation::Operation;
+use painter_depgraph::DepGraph;
 
 pub fn create_default_image() -> Image {
     let mut image = Image {
@@ -47,9 +47,10 @@ pub fn create_default_image() -> Image {
     image
         .depgraph
         .insert(output_op_id, vec![background_blend_op_id]);
-    image
-        .depgraph
-        .insert(background_blend_op_id, vec![background_layer_start, canvas_base]);
+    image.depgraph.insert(
+        background_blend_op_id,
+        vec![background_layer_start, canvas_base],
+    );
 
     image.brushes.insert(Brush {
         name: "Spiral".to_string(),

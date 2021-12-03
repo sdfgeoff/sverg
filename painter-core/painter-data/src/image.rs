@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 use crate::color_primitives::Color;
 //use crate::depgraph::DepGraph;
 
+use crate::id_map::{BrushIdMap, GlyphIdMap, LayerIdMap, OperationId, OperationIdMap};
 use painter_depgraph::DepGraph;
-use crate::id_map::{BrushIdMap, GlyphIdMap, LayerIdMap, OperationIdMap, OperationId};
 
 #[pyclass]
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
