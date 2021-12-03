@@ -11,6 +11,15 @@ Functional but Useless. You can draw on a canvas with a single brush with config
 color/size. The brush is fixed as a spiral shape, and it can only save/load
 to a hard-coded filepath.
 
+Currently performance is pretty poor (on my laptop with an iGPU) because:
+ - The depgraph doesn't cache anything between frames - so it re-renders the entire 
+   image from scratch each frame
+ - There are lots of texture copies. Every brush stroke copies the entire canvas texture 
+   (gasp). This makes the depgraph execution very safe, but means we are doing lots 
+   of extra work 
+     - Currently the default canvas resolution is 3840 x 2160. If this can be somewhat performant
+       on my laptop, then ... yay!
+
 See the TODO file for more details
 
 
