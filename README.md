@@ -14,11 +14,11 @@ to a hard-coded filepath.
 Currently performance is pretty poor (on my laptop with an iGPU) because:
  - The depgraph doesn't cache anything between frames - so it re-renders the entire 
    image from scratch each frame
- - There are lots of texture copies. Every brush stroke copies the entire canvas texture 
-   (gasp). This makes the depgraph execution very safe, but means we are doing lots 
-   of extra work 
-     - Currently the default canvas resolution is 3840 x 2160. If this can be somewhat performant
-       on my laptop, then ... yay!
+     - Currently the default canvas resolution is 3840 x 2160 and my laptop can handle about
+       20 brush strokes before lack of performance becomes noticable. My aim is to get this 
+       canvas resolution running somewhat performantly. This will likely mean that even with
+       ideal caching, drawing an image for the first time may take a couple seconds, and editing
+       the bottom layer of a complex image may also not be the most responsive thing ever.
 
 See the TODO file for more details
 

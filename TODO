@@ -6,6 +6,7 @@
  - [x] Rename "child" in depsgraph to "depends_on" 
  - [x] Sort out render order for layers
  - [x] Dynamically allocate textures on GPU based on depgraph allocation
+ - [x] Allow mutation of resources to reduce copying
  - [ ] Sort out render caching between frames.
  
 At this point evaluate feasibility. Do some daily spitpaints. Figure out how
