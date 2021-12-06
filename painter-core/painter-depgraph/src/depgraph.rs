@@ -59,11 +59,11 @@ impl<I: Hash + Eq + Debug + Clone> DepGraph<I> {
             let node_hash = node_hasher.finish();
             outstr += &format!("    op_{} [label={:?}];\n", node_hash, formatter(node));
 
-            for dependant_node in depends_on {
+            for (edge_id, dependant_node) in depends_on.iter().enumerate() {
                 let mut dep_hasher = DefaultHasher::new();
                 dependant_node.hash(&mut dep_hasher);
                 let dep_hash = dep_hasher.finish();
-                outstr += &format!("    op_{} -> op_{};\n", node_hash, dep_hash);
+                outstr += &format!("    op_{} -> op_{} [label={}];\n", node_hash, dep_hash, edge_id);
             }
         }
         outstr += "}\n";

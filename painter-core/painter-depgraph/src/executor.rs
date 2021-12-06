@@ -61,26 +61,6 @@ pub enum ExecutorError {
     DependencyNotExecuted,
 }
 
-fn fmt_memory<I: Debug>(memory: &Vec<(Option<I>, bool)>) -> String {
-    let mut out_str = String::new();
-
-    for item in memory {
-        if let Some(id) = &item.0 {
-            out_str += &format!(
-                "| {:?} {} ",
-                id,
-                match item.1 {
-                    true => "☑",
-                    false => "☐",
-                }
-            )
-        } else {
-            out_str += "|       "
-        }
-    }
-    out_str += "|";
-    out_str
-}
 
 /// This executor explicitly errors if anything incorrect is detected, and prints the allocated resources at each stage.
 /// You specify the operations it should execute and the number of registers available to the machine.
@@ -91,7 +71,14 @@ pub fn default_executor<I: Debug + std::cmp::PartialEq + std::hash::Hash + Clone
     register_count: usize,
     load: &mut dyn FnMut(LocatedOperation<I>),
     unload: &mut dyn FnMut(LocatedOperation<I>),
-    perform_operation: &mut dyn FnMut(LocatedOperation<I>, Vec<LocatedOperation<I>>),
+
+    // Callback that us run whenever an operation is ready to be executed.
+    // The first parameter is the ID of the operation to execute
+    // The second parameters is a vector of the dependencies (and addresses thereof) for that operation.
+    // The third parameter is a vector of dependencies that will be deleted/unloaded after the operation.
+    //      ths is because for some operations it amay be more efficient to execute if it can mutate one of the
+    //      dependencies. This third parameter is the list of dependencies it is safe to mutate.
+    perform_operation: &mut dyn FnMut(LocatedOperation<I>, Vec<LocatedOperation<I>>, Vec<LocatedOperation<I>>),
 ) -> Result<(), ExecutorError> {
     let mut memory: Vec<(Option<I>, bool)> = Vec::with_capacity(register_count);
 
@@ -100,8 +87,6 @@ pub fn default_executor<I: Debug + std::cmp::PartialEq + std::hash::Hash + Clone
     }
 
     let mut memory_map = std::collections::HashMap::new();
-
-    println!("    {}", fmt_memory(&memory));
 
     for stage in stages.iter() {
         // Allocate Space
@@ -123,8 +108,6 @@ pub fn default_executor<I: Debug + std::cmp::PartialEq + std::hash::Hash + Clone
             memory_map.insert(alloc_op.id.clone(), alloc_op.addr);
             load(alloc_op.clone());
         }
-
-        println!("    {}", fmt_memory(&memory));
 
         let (current_operation, current_operation_addr) = &stage.operation;
         let mut dep_array: Vec<LocatedOperation<I>> = Vec::new();
@@ -169,18 +152,20 @@ pub fn default_executor<I: Debug + std::cmp::PartialEq + std::hash::Hash + Clone
             if *already_executed {
                 return Err(ExecutorError::OperationRunTwice);
             }
+
         }
         memory
             .get_mut(*current_operation_addr)
             .ok_or(ExecutorError::MemoryHitResourceLimit)?
             .1 = true;
-        println!("{:?} {}", current_operation.id, fmt_memory(&memory));
         perform_operation(
             LocatedOperation {
                 id: current_operation.id.clone(),
                 addr: *current_operation_addr,
             },
             dep_array,
+            stage.delete_after.clone()
+
         );
 
         // Remove Old
@@ -191,13 +176,13 @@ pub fn default_executor<I: Debug + std::cmp::PartialEq + std::hash::Hash + Clone
                 }
                 let (del_cur_allocated, del_already_executed) = &memory
                     .get(del_op.addr)
-                    .ok_or(ExecutorError::MemoryHitResourceLimit)?;
+                    .ok_or(ExecutorError::MemoryMapErrorInternal)?;
 
                 if del_cur_allocated == &None {
                     return Err(ExecutorError::MemoryFreeingEmpty);
                 }
                 if del_cur_allocated.as_ref() != Some(&del_op.id) {
-                    return Err(ExecutorError::MemoryMapError);
+                    return Err(ExecutorError::MemoryMapErrorInternal);
                 }
                 if !del_already_executed {
                     return Err(ExecutorError::MemoryFreeingUnexecuted);
@@ -209,7 +194,6 @@ pub fn default_executor<I: Debug + std::cmp::PartialEq + std::hash::Hash + Clone
             unload(del_op.clone());
         }
 
-        println!("    {}", fmt_memory(&memory));
     }
     Ok(())
 }

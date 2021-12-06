@@ -128,7 +128,7 @@ impl PainterRenderer {
             NUM_TEXTURES,
             &mut |x| self.load_resource(context, x),
             &mut |x| self.unload_resource(context, x),
-            &mut |x, dep| self.execute_op(context, x, dep),
+            &mut |x, dep, mut_dep| self.execute_op(context, x, dep, mut_dep),
         ).expect("Execution Failed");
 
         self.output_framebuffer = None;
@@ -202,17 +202,26 @@ impl PainterRenderer {
         context: &EditContext, 
         op: LocatedOperation<OperationId>,
         deps: Vec<LocatedOperation<OperationId>>,
+        mutable_deps: Vec<LocatedOperation<OperationId>>,
     ) {
-        let texture_cache = self.gpu_texture_cache.borrow();
-
-        let output_canvas = texture_cache.get(&op.addr).expect("Texture not loaded in cache");
-
 
         match context.image.operations.get_unchecked(&op.id) {
             Operation::Stroke(stroke_data) => {
-                let canvas_to_draw_on = texture_cache.get(&deps[0].addr).expect("Output does not depend on anythin!");
-
-                output_canvas.copy_from(&self.gl, canvas_to_draw_on);
+                if deps.len() != 1 {
+                    panic!("Stroke expects exactly one dependency")
+                }
+                let draw_on_dep = deps.get(0).expect("Output does not depend on anything!");
+                
+                if mutable_deps.contains(draw_on_dep) {
+                    self.swap_items_in_tex_cache(&draw_on_dep, &op);
+                } else {
+                    let texture_cache = self.gpu_texture_cache.borrow();
+                    let canvas_to_draw_on = texture_cache.get(&draw_on_dep.addr).expect("Canvas not created!");
+                    let output_canvas = texture_cache.get(&op.addr).expect("Texture not loaded in cache");
+                    output_canvas.copy_from(&self.gl, canvas_to_draw_on);
+                }
+                let texture_cache = self.gpu_texture_cache.borrow();
+                let output_canvas = texture_cache.get(&op.addr).expect("Texture not loaded in cache");
 
                 if let Some(glyph) = context.image.glyphs.get(&stroke_data.glyph) {
                     self.brush_renderer.perform_stroke(
@@ -226,6 +235,10 @@ impl PainterRenderer {
                 }
             }
             Operation::Output(_id) => {
+                if deps.len() != 1 {
+                    panic!("Output expects exactly one dependency")
+                }
+                let texture_cache = self.gpu_texture_cache.borrow();
                 let canvas_to_draw = texture_cache.get(&deps[0].addr).expect("Output does not depend on anythin!");
                 self.output_renderer.render(
                     &self.gl,
@@ -234,16 +247,51 @@ impl PainterRenderer {
                     self.output_framebuffer.as_ref().expect("No output framebuffer"),
                 );
             }
-            Operation::Tag(_name) => {}
+            Operation::Tag(_name) => {
+                if deps.len() == 0 {
+                    // No Op
+                } else if deps.len() == 1 {
+                    let draw_on_dep = deps.get(0).expect("Tag internal error");
+                    if mutable_deps.contains(draw_on_dep) {
+                        self.swap_items_in_tex_cache(&draw_on_dep, &op);
+                    } else {
+                        let texture_cache = self.gpu_texture_cache.borrow();
+                        let canvas_to_draw_on = texture_cache.get(&draw_on_dep.addr).expect("Canvas not created!");
+                        let output_canvas = texture_cache.get(&op.addr).expect("Texture not loaded in cache");
+                        output_canvas.copy_from(&self.gl, canvas_to_draw_on);
+                    }
+                } else {
+                    panic!("Tag expects exactly one or zero dependencies")
+                }
+
+            }
             Operation::Composite(_name) => {
                 // For now all composites are a passthrough
+                if deps.len() != 2 {
+                    panic!("Composite expects exactly two dependencies")
+                }
+                let texture_cache = self.gpu_texture_cache.borrow();
+                let output_canvas = texture_cache.get(&op.addr).expect("Texture not loaded in cache");
+
                 let canvas_underneath = texture_cache.get(&deps[0].addr).expect("Output does not depend on anythin!");
                 let _canvas_above = texture_cache.get(&deps[1].addr).expect("Output does not depend on anythin!");
                 output_canvas.copy_from(&self.gl, canvas_underneath);
             }
         }
     }
+    fn swap_items_in_tex_cache(&self, item1: &LocatedOperation<OperationId>, item2: &LocatedOperation<OperationId>) {
+        let mut texture_cache = self.gpu_texture_cache.borrow_mut();
+
+        let i1 = texture_cache.remove(&item1.addr).expect("Item not in texture cache");
+        let i2 = texture_cache.remove(&item2.addr).expect("Item not in texture cache");
+
+        texture_cache.insert(item1.addr, i2);
+        texture_cache.insert(item2.addr, i1);
+    }
 }
+
+
+
 
 fn create_gl_context() -> glow::Context {
     info!("Attempting to grab openGL Context");
